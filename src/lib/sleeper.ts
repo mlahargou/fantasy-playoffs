@@ -1,0 +1,157 @@
+// Sleeper API utilities
+
+export interface SleeperPlayer {
+  player_id: string;
+  full_name: string;
+  first_name: string;
+  last_name: string;
+  team: string | null;
+  position: string | null;
+  fantasy_positions: string[] | null;
+  status: string;
+  active: boolean;
+}
+
+export interface SleeperWeekStats {
+  stats: {
+    pts_ppr?: number;
+    pts_half_ppr?: number;
+    pts_std?: number;
+    [key: string]: number | undefined;
+  };
+  week: number;
+  season: string;
+  team: string;
+}
+
+// Cache for all players (it's a large dataset)
+let cachedPlayers: Record<string, SleeperPlayer> | null = null;
+let playersCacheTimestamp: number = 0;
+const PLAYERS_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+// NFL teams in the 2025-2026 playoffs
+export const PLAYOFF_TEAM_ABBRS = [
+  'BUF', 'BAL', 'KC', 'HOU', 'LAC', 'PIT', 'DEN', // AFC
+  'DET', 'PHI', 'TB', 'LAR', 'MIN', 'WAS', 'GB'   // NFC
+];
+
+// Scoring configuration - weeks to include for scoring
+// For testing: last 3 regular season weeks
+// For playoffs: update to playoff weeks [1, 2, 3, 4] with season_type: 'post'
+export const SCORING_CONFIG = {
+  season: '2025',
+  season_type: 'regular', // 'regular' or 'post'
+  weeks: [15, 16, 17], // For testing - change to playoff weeks later
+};
+
+export async function fetchAllPlayers(): Promise<Record<string, SleeperPlayer>> {
+  const now = Date.now();
+
+  if (cachedPlayers && (now - playersCacheTimestamp) < PLAYERS_CACHE_DURATION) {
+    return cachedPlayers;
+  }
+
+  const response = await fetch('https://api.sleeper.app/v1/players/nfl');
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch players from Sleeper');
+  }
+
+  cachedPlayers = await response.json();
+  playersCacheTimestamp = now;
+
+  return cachedPlayers!;
+}
+
+export async function getPlayoffPlayers(position: string, search: string = ''): Promise<{
+  id: string;
+  name: string;
+  team: string;
+  position: string;
+}[]> {
+  const allPlayers = await fetchAllPlayers();
+
+  const filtered = Object.values(allPlayers)
+    .filter((player) => {
+      // Must have a team on a playoff team
+      if (!player.team || !PLAYOFF_TEAM_ABBRS.includes(player.team)) return false;
+
+      // Must be active
+      if (!player.active || player.status !== 'Active') return false;
+
+      // Must match position
+      if (player.position !== position) return false;
+
+      // Match search if provided
+      if (search && !player.full_name?.toLowerCase().includes(search.toLowerCase())) return false;
+
+      return true;
+    })
+    .map((player) => ({
+      id: player.player_id,
+      name: player.full_name,
+      team: player.team!,
+      position: player.position!,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  return filtered;
+}
+
+export async function getPlayerWeeklyStats(playerId: string): Promise<Record<string, SleeperWeekStats>> {
+  const { season, season_type } = SCORING_CONFIG;
+
+  const response = await fetch(
+    `https://api.sleeper.com/stats/nfl/player/${playerId}?season_type=${season_type}&season=${season}&grouping=week`
+  );
+
+  if (!response.ok) {
+    console.error(`Failed to fetch stats for player ${playerId}`);
+    return {};
+  }
+
+  return await response.json();
+}
+
+export async function calculatePlayerScore(playerId: string): Promise<number> {
+  const stats = await getPlayerWeeklyStats(playerId);
+  const { weeks } = SCORING_CONFIG;
+
+  let totalPoints = 0;
+
+  for (const week of weeks) {
+    const weekStats = stats[week.toString()];
+    if (weekStats?.stats?.pts_ppr) {
+      totalPoints += weekStats.stats.pts_ppr;
+    }
+  }
+
+  return Math.round(totalPoints * 10) / 10; // Round to 1 decimal
+}
+
+export async function calculateTeamScore(playerIds: string[]): Promise<{
+  total: number;
+  breakdown: Record<string, number>;
+}> {
+  const breakdown: Record<string, number> = {};
+  let total = 0;
+
+  // Fetch all player scores in parallel
+  const scores = await Promise.all(
+    playerIds.map(async (id) => {
+      const score = await calculatePlayerScore(id);
+      return { id, score };
+    })
+  );
+
+  for (const { id, score } of scores) {
+    breakdown[id] = score;
+    total += score;
+  }
+
+  return {
+    total: Math.round(total * 10) / 10,
+    breakdown,
+  };
+}
+
