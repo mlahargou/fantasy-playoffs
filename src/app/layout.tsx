@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Fantasy Playoffs Bracket Challenge",
-  description: "Pick your QB, WR, RB, and TE for the 2024-2025 NFL Playoffs. Standard scoring from Wild Card through Super Bowl.",
+  description: "Pick your QB, WR, RB, and TE for the 2025-2026 NFL Playoffs. Standard scoring from Wild Card through Super Bowl.",
   openGraph: {
     title: "Fantasy Playoffs Bracket Challenge",
     description: "Pick your dream team for the NFL Playoffs",

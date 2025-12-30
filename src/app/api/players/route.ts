@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// NFL teams in the 2024-2025 playoffs
+// NFL teams in the 2025-2026 playoffs
 const PLAYOFF_TEAMS = [
    'BUF', 'BAL', 'KC', 'HOU', 'LAC', 'PIT', 'DEN', // AFC
    'DET', 'PHI', 'TB', 'LAR', 'MIN', 'WAS', 'GB'   // NFC

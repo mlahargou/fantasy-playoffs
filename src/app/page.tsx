@@ -27,7 +27,7 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            2024-2025 NFL Playoffs
+            2025-2026 NFL Playoffs
           </div>
 
           <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">

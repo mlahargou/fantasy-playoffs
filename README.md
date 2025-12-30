@@ -76,10 +76,11 @@ src/
     └── db.ts                # Neon database connection
 ```
 
-## Playoff Teams (2024-2025)
+## Playoff Teams (2025-2026)
 
-The app only shows players from playoff-bound teams:
+The app only shows players from playoff-bound teams. Update the `PLAYOFF_TEAMS` array in `src/app/api/players/route.ts` once the playoff field is set.
 
+Current placeholder teams (update when playoffs are finalized):
 **AFC**: Bills, Ravens, Chiefs, Texans, Chargers, Steelers, Broncos
 **NFC**: Lions, Eagles, Buccaneers, Rams, Vikings, Commanders, Packers
 
