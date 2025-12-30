@@ -90,11 +90,25 @@ export async function POST(request: Request) {
    }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
    try {
       await initializeDatabase();
       const sql = getDb();
 
+      const { searchParams } = new URL(request.url);
+      const email = searchParams.get('email');
+
+      // If email provided, return only that user's entries
+      if (email) {
+         const entries = await sql`
+        SELECT team_number FROM entries WHERE LOWER(email) = LOWER(${email})
+      `;
+         return NextResponse.json({
+            submittedTeams: entries.map((e) => e.team_number)
+         });
+      }
+
+      // Otherwise return all entries (for admin)
       const entries = await sql`
       SELECT * FROM entries ORDER BY created_at DESC
     `;
