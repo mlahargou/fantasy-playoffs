@@ -52,20 +52,20 @@ export default function Home() {
             How It Works
           </h2>
           <ul className="space-y-2 text-slate-300 text-sm">
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-400 mt-1">•</span>
+            <li className="flex items-center gap-2">
+              <span className="text-emerald-400">•</span>
               Your picks stay with you the entire playoffs
             </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-400 mt-1">•</span>
-              If a player&apos;s team loses, they stop scoring for you
+            <li className="flex items-center gap-2">
+              <span className="text-emerald-400">•</span>
+              Players earn points only for playoff games played
             </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-400 mt-1">•</span>
-              Up to 5 teams allowed • $10 per team
+            <li className="flex items-center gap-2">
+              <span className="text-emerald-400">•</span>
+              Up to 5 teams allowed per person • $10 per team
             </li>
-            <li className="flex items-start gap-2">
-              <span className="text-emerald-400 mt-1">•</span>
+            <li className="flex items-center gap-2">
+              <span className="text-emerald-400">•</span>
               1st place: 90% of pot • 2nd place: 10%
             </li>
           </ul>
