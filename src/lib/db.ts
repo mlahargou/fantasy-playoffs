@@ -17,7 +17,7 @@ export async function initializeDatabase() {
    await db`
     CREATE TABLE IF NOT EXISTS entries (
       id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
+      email VARCHAR(255) NOT NULL,
       team_number INTEGER NOT NULL CHECK (team_number >= 1 AND team_number <= 5),
       qb_id VARCHAR(100) NOT NULL,
       qb_name VARCHAR(255) NOT NULL,
@@ -32,7 +32,7 @@ export async function initializeDatabase() {
       te_name VARCHAR(255) NOT NULL,
       te_team VARCHAR(50) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(name, team_number)
+      UNIQUE(email, team_number)
     )
   `;
 }

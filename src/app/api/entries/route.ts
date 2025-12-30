@@ -10,12 +10,20 @@ export async function POST(request: Request) {
       const sql = getDb();
 
       const body = await request.json();
-      const { name, teamNumber, qb, wr, rb, te } = body;
+      const { email, teamNumber, qb, wr, rb, te } = body;
 
       // Validate required fields
-      if (!name || !teamNumber || !qb || !wr || !rb || !te) {
+      if (!email || !teamNumber || !qb || !wr || !rb || !te) {
          return NextResponse.json(
             { error: 'All fields are required' },
+            { status: 400 }
+         );
+      }
+
+      // Validate email format
+      if (!email.includes('@')) {
+         return NextResponse.json(
+            { error: 'Please enter a valid email address' },
             { status: 400 }
          );
       }
@@ -30,7 +38,7 @@ export async function POST(request: Request) {
 
       // Check how many teams this person already has
       const existingTeams = await sql`
-      SELECT team_number FROM entries WHERE LOWER(name) = LOWER(${name})
+      SELECT team_number FROM entries WHERE LOWER(email) = LOWER(${email})
     `;
 
       if (existingTeams.length >= 5) {
@@ -54,13 +62,13 @@ export async function POST(request: Request) {
       // Insert the entry
       await sql`
       INSERT INTO entries (
-        name, team_number,
+        email, team_number,
         qb_id, qb_name, qb_team,
         wr_id, wr_name, wr_team,
         rb_id, rb_name, rb_team,
         te_id, te_name, te_team
       ) VALUES (
-        ${name}, ${teamNumber},
+        ${email.toLowerCase()}, ${teamNumber},
         ${qb.id}, ${qb.name}, ${qb.team},
         ${wr.id}, ${wr.name}, ${wr.team},
         ${rb.id}, ${rb.name}, ${rb.team},

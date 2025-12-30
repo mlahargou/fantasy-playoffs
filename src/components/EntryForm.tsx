@@ -11,7 +11,7 @@ interface Player {
 }
 
 export default function EntryForm() {
-   const [name, setName] = useState('');
+   const [email, setEmail] = useState('');
    const [teamNumber, setTeamNumber] = useState(1);
    const [qb, setQb] = useState<Player | null>(null);
    const [wr, setWr] = useState<Player | null>(null);
@@ -24,8 +24,8 @@ export default function EntryForm() {
       e.preventDefault();
       setMessage(null);
 
-      if (!name.trim()) {
-         setMessage({ type: 'error', text: 'Please enter your name' });
+      if (!email.trim() || !email.includes('@')) {
+         setMessage({ type: 'error', text: 'Please enter a valid email address' });
          return;
       }
 
@@ -40,7 +40,7 @@ export default function EntryForm() {
          const response = await fetch('/api/entries', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: name.trim(), teamNumber, qb, wr, rb, te }),
+            body: JSON.stringify({ email: email.trim().toLowerCase(), teamNumber, qb, wr, rb, te }),
          });
 
          const data = await response.json();
@@ -66,20 +66,20 @@ export default function EntryForm() {
       }
    };
 
-   const isFormValid = name.trim() && qb && wr && rb && te;
+   const isFormValid = email.trim() && email.includes('@') && qb && wr && rb && te;
 
    return (
       <form onSubmit={handleSubmit} className="space-y-8">
-         {/* Name Input */}
+         {/* Email Input */}
          <div>
             <label className="block text-sm font-semibold text-slate-300 mb-2 tracking-wide uppercase">
-               Your Name
+               Your Email
             </label>
             <input
-               type="text"
-               value={name}
-               onChange={(e) => setName(e.target.value)}
-               placeholder="Enter your name"
+               type="email"
+               value={email}
+               onChange={(e) => setEmail(e.target.value)}
+               placeholder="Enter your email"
                className="w-full px-5 py-4 rounded-xl bg-slate-800/50 border border-slate-600/50 text-white text-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
             />
          </div>
@@ -96,8 +96,8 @@ export default function EntryForm() {
                      type="button"
                      onClick={() => setTeamNumber(num)}
                      className={`flex-1 py-3 rounded-xl font-bold text-lg transition-all duration-200 ${teamNumber === num
-                           ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
-                           : 'bg-slate-800/50 text-slate-400 border border-slate-600/50 hover:border-slate-500/50 hover:text-white'
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
+                        : 'bg-slate-800/50 text-slate-400 border border-slate-600/50 hover:border-slate-500/50 hover:text-white'
                         }`}
                   >
                      {num}
@@ -119,8 +119,8 @@ export default function EntryForm() {
          {message && (
             <div
                className={`p-4 rounded-xl text-center font-medium ${message.type === 'success'
-                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                     : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
                   }`}
             >
                {message.text}
@@ -132,8 +132,8 @@ export default function EntryForm() {
             type="submit"
             disabled={!isFormValid || submitting}
             className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${isFormValid && !submitting
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]'
-                  : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+               ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]'
+               : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
                }`}
          >
             {submitting ? (
