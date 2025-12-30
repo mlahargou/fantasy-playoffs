@@ -7,7 +7,13 @@ interface Player {
    id: string;
    name: string;
    team: string;
-   position: string;
+}
+
+interface TeamSelections {
+   qb: Player;
+   wr: Player;
+   rb: Player;
+   te: Player;
 }
 
 export default function EntryForm() {
@@ -15,6 +21,7 @@ export default function EntryForm() {
    const [emailConfirmed, setEmailConfirmed] = useState(false);
    const [teamNumber, setTeamNumber] = useState(1);
    const [submittedTeams, setSubmittedTeams] = useState<Set<number>>(new Set());
+   const [savedTeams, setSavedTeams] = useState<Record<number, TeamSelections>>({});
    const [loadingEmail, setLoadingEmail] = useState(false);
    const [qb, setQb] = useState<Player | null>(null);
    const [wr, setWr] = useState<Player | null>(null);
@@ -22,6 +29,8 @@ export default function EntryForm() {
    const [te, setTe] = useState<Player | null>(null);
    const [submitting, setSubmitting] = useState(false);
    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+   const isViewingSubmitted = submittedTeams.has(teamNumber);
 
    const handleEmailSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -40,17 +49,20 @@ export default function EntryForm() {
             const data = await response.json();
             const teams = new Set<number>(data.submittedTeams || []);
             setSubmittedTeams(teams);
+            setSavedTeams(data.teams || {});
 
-            // Auto-select first available team number
+            // Auto-select first available team number, or first submitted if all done
             const firstAvailable = [1, 2, 3, 4, 5].find((num) => !teams.has(num));
             if (firstAvailable) {
                setTeamNumber(firstAvailable);
+            } else if (teams.size > 0) {
+               setTeamNumber(1); // View first team if all submitted
             }
          }
          setEmailConfirmed(true);
       } catch (error) {
          console.error('Error checking email:', error);
-         setEmailConfirmed(true); // Still proceed even if check fails
+         setEmailConfirmed(true);
       } finally {
          setLoadingEmail(false);
       }
@@ -59,7 +71,26 @@ export default function EntryForm() {
    const handleChangeEmail = () => {
       setEmailConfirmed(false);
       setSubmittedTeams(new Set());
+      setSavedTeams({});
       setMessage(null);
+      setQb(null);
+      setWr(null);
+      setRb(null);
+      setTe(null);
+   };
+
+   const handleTeamNumberChange = (num: number) => {
+      setTeamNumber(num);
+      setMessage(null);
+
+      // If viewing a submitted team, don't clear selections
+      // If switching to a new team slot, clear selections
+      if (!submittedTeams.has(num)) {
+         setQb(null);
+         setWr(null);
+         setRb(null);
+         setTe(null);
+      }
    };
 
    const handleTeamSubmit = async (e: React.FormEvent) => {
@@ -88,22 +119,24 @@ export default function EntryForm() {
 
          setMessage({ type: 'success', text: data.message });
 
-         // Mark this team as submitted
+         // Mark this team as submitted and save selections
          const newSubmittedTeams = new Set([...submittedTeams, teamNumber]);
          setSubmittedTeams(newSubmittedTeams);
+         setSavedTeams((prev) => ({
+            ...prev,
+            [teamNumber]: { qb, wr, rb, te },
+         }));
 
          // Find next available team number
          const nextTeam = [1, 2, 3, 4, 5].find((num) => !newSubmittedTeams.has(num));
 
          if (nextTeam) {
             setTeamNumber(nextTeam);
+            setQb(null);
+            setWr(null);
+            setRb(null);
+            setTe(null);
          }
-
-         // Reset player selections
-         setQb(null);
-         setWr(null);
-         setRb(null);
-         setTe(null);
       } catch (error) {
          setMessage({
             type: 'error',
@@ -113,6 +146,12 @@ export default function EntryForm() {
          setSubmitting(false);
       }
    };
+
+   // Get display values - either current selections or saved team
+   const displayQb = isViewingSubmitted ? savedTeams[teamNumber]?.qb || null : qb;
+   const displayWr = isViewingSubmitted ? savedTeams[teamNumber]?.wr || null : wr;
+   const displayRb = isViewingSubmitted ? savedTeams[teamNumber]?.rb || null : rb;
+   const displayTe = isViewingSubmitted ? savedTeams[teamNumber]?.te || null : te;
 
    const isFormValid = qb && wr && rb && te;
    const allTeamsSubmitted = submittedTeams.size >= 5;
@@ -148,8 +187,8 @@ export default function EntryForm() {
                type="submit"
                disabled={!email.trim() || loadingEmail}
                className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${email.trim() && !loadingEmail
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]'
-                  : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]'
+                     : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
                   }`}
             >
                {loadingEmail ? (
@@ -216,13 +255,14 @@ export default function EntryForm() {
                      <button
                         key={num}
                         type="button"
-                        onClick={() => !isSubmitted && setTeamNumber(num)}
-                        disabled={isSubmitted}
-                        className={`flex-1 py-3 rounded-xl font-bold text-lg transition-all duration-200 relative ${isSubmitted
-                           ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-not-allowed'
-                           : isSelected
-                              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
-                              : 'bg-slate-800/50 text-slate-400 border border-slate-600/50 hover:border-slate-500/50 hover:text-white'
+                        onClick={() => handleTeamNumberChange(num)}
+                        className={`flex-1 py-3 rounded-xl font-bold text-lg transition-all duration-200 relative ${isSelected
+                              ? isSubmitted
+                                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
+                                 : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25'
+                              : isSubmitted
+                                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                                 : 'bg-slate-800/50 text-slate-400 border border-slate-600/50 hover:border-slate-500/50 hover:text-white'
                            }`}
                      >
                         {isSubmitted ? (
@@ -239,64 +279,105 @@ export default function EntryForm() {
                })}
             </div>
             <p className="mt-2 text-sm text-slate-500">
-               {submittedTeams.size > 0
-                  ? `${submittedTeams.size}/5 teams submitted ($10 each)`
-                  : 'You can submit up to 5 teams ($10 each)'
+               {isViewingSubmitted
+                  ? `Viewing Team ${teamNumber} (submitted)`
+                  : submittedTeams.size > 0
+                     ? `${submittedTeams.size}/5 teams submitted ($10 each)`
+                     : 'You can submit up to 5 teams ($10 each)'
                }
             </p>
          </div>
 
+         {/* Viewing submitted team banner */}
+         {isViewingSubmitted && (
+            <div className="p-3 rounded-xl bg-slate-700/30 border border-slate-600/50 flex items-center gap-3">
+               <svg className="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+               </svg>
+               <p className="text-sm text-slate-400">
+                  Viewing your submitted picks for Team {teamNumber}
+               </p>
+            </div>
+         )}
+
          {/* Player Selections */}
          <div className="grid gap-6">
-            <PlayerSelect position="QB" label="Quarterback" value={qb} onChange={setQb} />
-            <PlayerSelect position="WR" label="Wide Receiver" value={wr} onChange={setWr} />
-            <PlayerSelect position="RB" label="Running Back" value={rb} onChange={setRb} />
-            <PlayerSelect position="TE" label="Tight End" value={te} onChange={setTe} />
+            <PlayerSelect
+               position="QB"
+               label="Quarterback"
+               value={displayQb}
+               onChange={setQb}
+               disabled={isViewingSubmitted}
+            />
+            <PlayerSelect
+               position="WR"
+               label="Wide Receiver"
+               value={displayWr}
+               onChange={setWr}
+               disabled={isViewingSubmitted}
+            />
+            <PlayerSelect
+               position="RB"
+               label="Running Back"
+               value={displayRb}
+               onChange={setRb}
+               disabled={isViewingSubmitted}
+            />
+            <PlayerSelect
+               position="TE"
+               label="Tight End"
+               value={displayTe}
+               onChange={setTe}
+               disabled={isViewingSubmitted}
+            />
          </div>
 
          {/* Message */}
          {message && (
             <div
                className={`p-4 rounded-xl text-center font-medium ${message.type === 'success'
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                     ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                     : 'bg-red-500/20 text-red-300 border border-red-500/30'
                   }`}
             >
                {message.text}
             </div>
          )}
 
-         {/* Submit Button */}
-         {allTeamsSubmitted ? (
-            <div className="w-full py-4 rounded-xl font-bold text-lg text-center bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-               <span className="flex items-center justify-center gap-2">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  All 5 Teams Submitted!
-               </span>
-            </div>
-         ) : (
-            <button
-               type="submit"
-               disabled={!isFormValid || submitting}
-               className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${isFormValid && !submitting
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]'
-                  : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
-                  }`}
-            >
-               {submitting ? (
+         {/* Submit Button - only show for non-submitted teams */}
+         {!isViewingSubmitted && (
+            allTeamsSubmitted ? (
+               <div className="w-full py-4 rounded-xl font-bold text-lg text-center bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   <span className="flex items-center justify-center gap-2">
-                     <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                      </svg>
-                     Submitting...
+                     All 5 Teams Submitted!
                   </span>
-               ) : (
-                  `Submit Team ${teamNumber}`
-               )}
-            </button>
+               </div>
+            ) : (
+               <button
+                  type="submit"
+                  disabled={!isFormValid || submitting}
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${isFormValid && !submitting
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98]'
+                        : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                     }`}
+               >
+                  {submitting ? (
+                     <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Submitting...
+                     </span>
+                  ) : (
+                     `Submit Team ${teamNumber}`
+                  )}
+               </button>
+            )
          )}
       </form>
    );

@@ -98,13 +98,40 @@ export async function GET(request: Request) {
       const { searchParams } = new URL(request.url);
       const email = searchParams.get('email');
 
-      // If email provided, return only that user's entries
+      // If email provided, return that user's entries with full details
       if (email) {
          const entries = await sql`
-        SELECT team_number FROM entries WHERE LOWER(email) = LOWER(${email})
-      `;
+          SELECT
+            team_number,
+            qb_id, qb_name, qb_team,
+            wr_id, wr_name, wr_team,
+            rb_id, rb_name, rb_team,
+            te_id, te_name, te_team
+          FROM entries
+          WHERE LOWER(email) = LOWER(${email})
+          ORDER BY team_number
+        `;
+
+         // Transform into a map of team_number -> selections
+         const teams: Record<number, {
+            qb: { id: string; name: string; team: string };
+            wr: { id: string; name: string; team: string };
+            rb: { id: string; name: string; team: string };
+            te: { id: string; name: string; team: string };
+         }> = {};
+
+         for (const entry of entries) {
+            teams[entry.team_number] = {
+               qb: { id: entry.qb_id, name: entry.qb_name, team: entry.qb_team },
+               wr: { id: entry.wr_id, name: entry.wr_name, team: entry.wr_team },
+               rb: { id: entry.rb_id, name: entry.rb_name, team: entry.rb_team },
+               te: { id: entry.te_id, name: entry.te_name, team: entry.te_team },
+            };
+         }
+
          return NextResponse.json({
-            submittedTeams: entries.map((e) => e.team_number)
+            submittedTeams: entries.map((e) => e.team_number),
+            teams,
          });
       }
 

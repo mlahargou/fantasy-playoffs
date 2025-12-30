@@ -6,7 +6,7 @@ interface Player {
    id: string;
    name: string;
    team: string;
-   position: string;
+   position?: string;
 }
 
 interface PlayerSelectProps {
@@ -14,9 +14,10 @@ interface PlayerSelectProps {
    label: string;
    value: Player | null;
    onChange: (player: Player | null) => void;
+   disabled?: boolean;
 }
 
-export default function PlayerSelect({ position, label, value, onChange }: PlayerSelectProps) {
+export default function PlayerSelect({ position, label, value, onChange, disabled = false }: PlayerSelectProps) {
    const [isOpen, setIsOpen] = useState(false);
    const [search, setSearch] = useState('');
    const [players, setPlayers] = useState<Player[]>([]);
@@ -26,6 +27,8 @@ export default function PlayerSelect({ position, label, value, onChange }: Playe
    const inputRef = useRef<HTMLInputElement>(null);
 
    useEffect(() => {
+      if (disabled) return; // Don't fetch if disabled
+
       const fetchPlayers = async () => {
          setLoading(true);
          setError(null);
@@ -44,7 +47,7 @@ export default function PlayerSelect({ position, label, value, onChange }: Playe
 
       const debounce = setTimeout(fetchPlayers, 300);
       return () => clearTimeout(debounce);
-   }, [position, search]);
+   }, [position, search, disabled]);
 
    useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -58,15 +61,23 @@ export default function PlayerSelect({ position, label, value, onChange }: Playe
    }, []);
 
    const handleSelect = (player: Player) => {
+      if (disabled) return;
       onChange(player);
       setIsOpen(false);
       setSearch('');
    };
 
    const handleClear = (e: React.MouseEvent) => {
+      if (disabled) return;
       e.stopPropagation();
       onChange(null);
       setSearch('');
+   };
+
+   const handleClick = () => {
+      if (disabled) return;
+      setIsOpen(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
    };
 
    const positionColors = {
@@ -90,12 +101,11 @@ export default function PlayerSelect({ position, label, value, onChange }: Playe
          </label>
 
          <div
-            className={`relative cursor-pointer rounded-xl border bg-gradient-to-br backdrop-blur-sm transition-all duration-200 ${positionColors[position]} ${isOpen ? 'ring-2 ring-white/20 shadow-xl' : 'hover:shadow-lg hover:border-white/20'
+            className={`relative rounded-xl border bg-gradient-to-br backdrop-blur-sm transition-all duration-200 ${positionColors[position]} ${disabled
+                  ? 'opacity-75 cursor-default'
+                  : `cursor-pointer ${isOpen ? 'ring-2 ring-white/20 shadow-xl' : 'hover:shadow-lg hover:border-white/20'}`
                }`}
-            onClick={() => {
-               setIsOpen(true);
-               setTimeout(() => inputRef.current?.focus(), 50);
-            }}
+            onClick={handleClick}
          >
             <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${positionAccents[position]}`} />
 
@@ -107,14 +117,23 @@ export default function PlayerSelect({ position, label, value, onChange }: Playe
                         {value.team}
                      </span>
                   </div>
-                  <button
-                     onClick={handleClear}
-                     className="text-slate-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
-                  >
-                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                     </svg>
-                  </button>
+                  {!disabled && (
+                     <button
+                        onClick={handleClear}
+                        className="text-slate-400 hover:text-white transition-colors p-1 hover:bg-white/10 rounded-lg"
+                     >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                     </button>
+                  )}
+                  {disabled && (
+                     <div className="text-slate-500">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                     </div>
+                  )}
                </div>
             ) : (
                <div className="p-4 pl-5 text-slate-400 flex items-center gap-2">
@@ -126,7 +145,7 @@ export default function PlayerSelect({ position, label, value, onChange }: Playe
             )}
          </div>
 
-         {isOpen && (
+         {isOpen && !disabled && (
             <div className="absolute z-50 mt-2 w-full rounded-xl border border-slate-600/50 bg-slate-800/95 backdrop-blur-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                <div className="p-3 border-b border-slate-700/50">
                   <input
@@ -169,4 +188,3 @@ export default function PlayerSelect({ position, label, value, onChange }: Playe
       </div>
    );
 }
-
