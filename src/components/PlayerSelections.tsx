@@ -6,6 +6,7 @@ interface Player {
   id: string;
   name: string;
   team: string;
+  score?: number;
 }
 
 interface PlayerSelectionsProps {
@@ -58,4 +59,3 @@ export default function PlayerSelections({
     </div>
   );
 }
-

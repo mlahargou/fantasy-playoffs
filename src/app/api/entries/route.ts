@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb, initializeDatabase } from '@/lib/db';
+import { calculatePlayerScore } from '@/lib/sleeper';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,7 +99,7 @@ export async function GET(request: Request) {
       const { searchParams } = new URL(request.url);
       const email = searchParams.get('email');
 
-      // If email provided, return that user's entries with full details
+      // If email provided, return that user's entries with full details and scores
       if (email) {
          const entries = await sql`
           SELECT
@@ -112,20 +113,47 @@ export async function GET(request: Request) {
           ORDER BY team_number
         `;
 
-         // Transform into a map of team_number -> selections
+         // Collect all unique player IDs to fetch scores
+         const playerIds = new Set<string>();
+         for (const entry of entries) {
+            playerIds.add(entry.qb_id);
+            playerIds.add(entry.wr_id);
+            playerIds.add(entry.rb_id);
+            playerIds.add(entry.te_id);
+         }
+
+         // Fetch all player scores in parallel
+         const scorePromises = Array.from(playerIds).map(async (id) => {
+            const score = await calculatePlayerScore(id);
+            return { id, score };
+         });
+         const scoreResults = await Promise.all(scorePromises);
+         const scores: Record<string, number> = {};
+         for (const { id, score } of scoreResults) {
+            scores[id] = score;
+         }
+
+         // Transform into a map of team_number -> selections with scores
          const teams: Record<number, {
-            qb: { id: string; name: string; team: string };
-            wr: { id: string; name: string; team: string };
-            rb: { id: string; name: string; team: string };
-            te: { id: string; name: string; team: string };
+            qb: { id: string; name: string; team: string; score: number };
+            wr: { id: string; name: string; team: string; score: number };
+            rb: { id: string; name: string; team: string; score: number };
+            te: { id: string; name: string; team: string; score: number };
+            totalScore: number;
          }> = {};
 
          for (const entry of entries) {
+            const qbScore = scores[entry.qb_id] || 0;
+            const wrScore = scores[entry.wr_id] || 0;
+            const rbScore = scores[entry.rb_id] || 0;
+            const teScore = scores[entry.te_id] || 0;
+
             teams[entry.team_number] = {
-               qb: { id: entry.qb_id, name: entry.qb_name, team: entry.qb_team },
-               wr: { id: entry.wr_id, name: entry.wr_name, team: entry.wr_team },
-               rb: { id: entry.rb_id, name: entry.rb_name, team: entry.rb_team },
-               te: { id: entry.te_id, name: entry.te_name, team: entry.te_team },
+               qb: { id: entry.qb_id, name: entry.qb_name, team: entry.qb_team, score: qbScore },
+               wr: { id: entry.wr_id, name: entry.wr_name, team: entry.wr_team, score: wrScore },
+               rb: { id: entry.rb_id, name: entry.rb_name, team: entry.rb_team, score: rbScore },
+               te: { id: entry.te_id, name: entry.te_name, team: entry.te_team, score: teScore },
+               totalScore: Math.round((qbScore + wrScore + rbScore + teScore) * 10) / 10,
             };
          }
 

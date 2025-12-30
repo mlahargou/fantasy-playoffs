@@ -11,6 +11,7 @@ interface Player {
    id: string;
    name: string;
    team: string;
+   score?: number;
 }
 
 interface TeamSelections {
@@ -18,6 +19,7 @@ interface TeamSelections {
    wr: Player;
    rb: Player;
    te: Player;
+   totalScore?: number;
 }
 
 export default function EntryForm() {
@@ -49,6 +51,7 @@ export default function EntryForm() {
    const displayWr = isViewingSubmitted ? savedTeams[teamNumber]?.wr || null : wr;
    const displayRb = isViewingSubmitted ? savedTeams[teamNumber]?.rb || null : rb;
    const displayTe = isViewingSubmitted ? savedTeams[teamNumber]?.te || null : te;
+   const currentTeamScore = isViewingSubmitted ? savedTeams[teamNumber]?.totalScore : undefined;
 
    const isFormValid = qb && wr && rb && te;
 
@@ -142,19 +145,34 @@ export default function EntryForm() {
 
          setMessage({ type: 'success', text: data.message });
 
-         // Mark this team as submitted and save selections
-         const newSubmittedTeams = new Set([...submittedTeams, teamNumber]);
-         setSubmittedTeams(newSubmittedTeams);
-         setSavedTeams((prev) => ({
-            ...prev,
-            [teamNumber]: { qb, wr, rb, te },
-         }));
+         // Fetch updated team data with scores
+         const updatedResponse = await fetch(`/api/entries?email=${encodeURIComponent(email.trim().toLowerCase())}`);
+         if (updatedResponse.ok) {
+            const updatedData = await updatedResponse.json();
+            const teams = new Set<number>(updatedData.submittedTeams || []);
+            setSubmittedTeams(teams);
+            setSavedTeams(updatedData.teams || {});
 
-         // Find and select next available team number
-         const nextTeam = [1, 2, 3, 4, 5].find((num) => !newSubmittedTeams.has(num));
-         if (nextTeam) {
-            setTeamNumber(nextTeam);
-            clearPlayerSelections();
+            // Find and select next available team number
+            const nextTeam = [1, 2, 3, 4, 5].find((num) => !teams.has(num));
+            if (nextTeam) {
+               setTeamNumber(nextTeam);
+               clearPlayerSelections();
+            }
+         } else {
+            // Fallback: save locally without scores
+            const newSubmittedTeams = new Set([...submittedTeams, teamNumber]);
+            setSubmittedTeams(newSubmittedTeams);
+            setSavedTeams((prev) => ({
+               ...prev,
+               [teamNumber]: { qb, wr, rb, te },
+            }));
+
+            const nextTeam = [1, 2, 3, 4, 5].find((num) => !newSubmittedTeams.has(num));
+            if (nextTeam) {
+               setTeamNumber(nextTeam);
+               clearPlayerSelections();
+            }
          }
       } catch (error) {
          setMessage({
@@ -195,16 +213,25 @@ export default function EntryForm() {
             onSelect={handleTeamNumberChange}
          />
 
-         {/* Viewing submitted team banner */}
+         {/* Viewing submitted team banner with total score */}
          {isViewingSubmitted && (
-            <div className="p-3 rounded-xl bg-slate-700/30 border border-slate-600/50 flex items-center gap-3">
-               <svg className="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-               </svg>
-               <p className="text-sm text-slate-400">
-                  Viewing your submitted picks for Team {teamNumber}
-               </p>
+            <div className="p-4 rounded-xl bg-slate-700/30 border border-slate-600/50 flex items-center justify-between">
+               <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <p className="text-sm text-slate-400">
+                     Team {teamNumber} picks
+                  </p>
+               </div>
+               {typeof currentTeamScore === 'number' && (
+                  <div className="flex items-center gap-2">
+                     <span className="text-sm text-slate-400">Total:</span>
+                     <span className="text-xl font-bold text-emerald-400">{currentTeamScore.toFixed(1)}</span>
+                     <span className="text-sm text-slate-500">pts</span>
+                  </div>
+               )}
             </div>
          )}
 
