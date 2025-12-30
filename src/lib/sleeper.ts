@@ -1,4 +1,5 @@
 // Sleeper API utilities
+import { PLAYOFF_TEAM_ABBRS, SCORING_CONFIG } from './config';
 
 export interface SleeperPlayer {
   player_id: string;
@@ -28,21 +29,6 @@ export interface SleeperWeekStats {
 let cachedPlayers: Record<string, SleeperPlayer> | null = null;
 let playersCacheTimestamp: number = 0;
 const PLAYERS_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-
-// NFL teams in the 2025-2026 playoffs
-export const PLAYOFF_TEAM_ABBRS = [
-  'BUF', 'BAL', 'KC', 'HOU', 'LAC', 'PIT', 'DEN', // AFC
-  'DET', 'PHI', 'TB', 'LAR', 'MIN', 'WAS', 'GB'   // NFC
-];
-
-// Scoring configuration - weeks to include for scoring
-// For testing: last 3 regular season weeks
-// For playoffs: update to playoff weeks [1, 2, 3, 4] with season_type: 'post'
-export const SCORING_CONFIG = {
-  season: '2025',
-  season_type: 'regular', // 'regular' or 'post'
-  weeks: [15, 16, 17], // For testing - change to playoff weeks later
-};
 
 export async function fetchAllPlayers(): Promise<Record<string, SleeperPlayer>> {
   const now = Date.now();

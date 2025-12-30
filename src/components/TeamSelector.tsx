@@ -1,11 +1,15 @@
 'use client';
 
+import { ENTRY_CONFIG } from '@/lib/config';
+
 interface TeamSelectorProps {
   teamNumber: number;
   submittedTeams: Set<number>;
   isViewingSubmitted: boolean;
   onSelect: (num: number) => void;
 }
+
+const teamNumbers = Array.from({ length: ENTRY_CONFIG.maxTeamsPerPerson }, (_, i) => i + 1);
 
 export default function TeamSelector({
   teamNumber,
@@ -19,7 +23,7 @@ export default function TeamSelector({
         Team Number
       </label>
       <div className="flex gap-3">
-        {[1, 2, 3, 4, 5].map((num) => {
+        {teamNumbers.map((num) => {
           const isSubmitted = submittedTeams.has(num);
           const isSelected = teamNumber === num;
 
@@ -53,8 +57,8 @@ export default function TeamSelector({
         {isViewingSubmitted
           ? `Viewing Team ${teamNumber} (submitted)`
           : submittedTeams.size > 0
-          ? `${submittedTeams.size}/5 teams submitted ($10 each)`
-          : 'You can submit up to 5 teams ($10 each)'
+          ? `${submittedTeams.size}/${ENTRY_CONFIG.maxTeamsPerPerson} teams submitted ($${ENTRY_CONFIG.entryFee} each)`
+          : `You can submit up to ${ENTRY_CONFIG.maxTeamsPerPerson} teams ($${ENTRY_CONFIG.entryFee} each)`
         }
       </p>
     </div>

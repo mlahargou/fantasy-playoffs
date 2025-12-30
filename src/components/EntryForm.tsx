@@ -6,6 +6,7 @@ import EmailHeader from './EmailHeader';
 import TeamSelector from './TeamSelector';
 import PlayerSelections from './PlayerSelections';
 import SubmitButton from './SubmitButton';
+import { ENTRY_CONFIG } from '@/lib/config';
 
 interface Player {
    id: string;
@@ -44,7 +45,7 @@ export default function EntryForm() {
    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
    const isViewingSubmitted = submittedTeams.has(teamNumber);
-   const allTeamsSubmitted = submittedTeams.size >= 5;
+   const allTeamsSubmitted = submittedTeams.size >= ENTRY_CONFIG.maxTeamsPerPerson;
 
    // Get display values - either current selections or saved team
    const displayQb = isViewingSubmitted ? savedTeams[teamNumber]?.qb || null : qb;
@@ -74,7 +75,8 @@ export default function EntryForm() {
             setSavedTeams(data.teams || {});
 
             // Auto-select first available team number, or first submitted if all done
-            const firstAvailable = [1, 2, 3, 4, 5].find((num) => !teams.has(num));
+            const teamNumbers = Array.from({ length: ENTRY_CONFIG.maxTeamsPerPerson }, (_, i) => i + 1);
+            const firstAvailable = teamNumbers.find((num) => !teams.has(num));
             if (firstAvailable) {
                setTeamNumber(firstAvailable);
             } else if (teams.size > 0) {
@@ -154,7 +156,8 @@ export default function EntryForm() {
             setSavedTeams(updatedData.teams || {});
 
             // Find and select next available team number
-            const nextTeam = [1, 2, 3, 4, 5].find((num) => !teams.has(num));
+            const teamNumbers = Array.from({ length: ENTRY_CONFIG.maxTeamsPerPerson }, (_, i) => i + 1);
+            const nextTeam = teamNumbers.find((num) => !teams.has(num));
             if (nextTeam) {
                setTeamNumber(nextTeam);
                clearPlayerSelections();
@@ -168,7 +171,8 @@ export default function EntryForm() {
                [teamNumber]: { qb, wr, rb, te },
             }));
 
-            const nextTeam = [1, 2, 3, 4, 5].find((num) => !newSubmittedTeams.has(num));
+            const teamNumbers = Array.from({ length: ENTRY_CONFIG.maxTeamsPerPerson }, (_, i) => i + 1);
+            const nextTeam = teamNumbers.find((num) => !newSubmittedTeams.has(num));
             if (nextTeam) {
                setTeamNumber(nextTeam);
                clearPlayerSelections();
@@ -267,7 +271,7 @@ export default function EntryForm() {
                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                      </svg>
-                     All 5 Teams Submitted!
+                     All {ENTRY_CONFIG.maxTeamsPerPerson} Teams Submitted!
                   </span>
                </div>
             ) : (

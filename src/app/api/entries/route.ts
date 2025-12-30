@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb, initializeDatabase } from '@/lib/db';
 import { calculatePlayerScore } from '@/lib/sleeper';
+import { ENTRY_CONFIG } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,9 +31,9 @@ export async function POST(request: Request) {
       }
 
       // Validate team number
-      if (teamNumber < 1 || teamNumber > 5) {
+      if (teamNumber < 1 || teamNumber > ENTRY_CONFIG.maxTeamsPerPerson) {
          return NextResponse.json(
-            { error: 'Team number must be between 1 and 5' },
+            { error: `Team number must be between 1 and ${ENTRY_CONFIG.maxTeamsPerPerson}` },
             { status: 400 }
          );
       }
@@ -42,9 +43,9 @@ export async function POST(request: Request) {
       SELECT team_number FROM entries WHERE LOWER(email) = LOWER(${email})
     `;
 
-      if (existingTeams.length >= 5) {
+      if (existingTeams.length >= ENTRY_CONFIG.maxTeamsPerPerson) {
          return NextResponse.json(
-            { error: 'You have already submitted 5 teams (the maximum allowed)' },
+            { error: `You have already submitted ${ENTRY_CONFIG.maxTeamsPerPerson} teams (the maximum allowed)` },
             { status: 400 }
          );
       }

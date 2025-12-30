@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb, initializeDatabase } from '@/lib/db';
-import { calculateTeamScore, SCORING_CONFIG } from '@/lib/sleeper';
+import { calculateTeamScore } from '@/lib/sleeper';
+import { SCORING_CONFIG } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
 

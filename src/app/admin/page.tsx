@@ -10,6 +10,7 @@ import {
   LoadingState,
   ErrorState,
 } from './components';
+import { ENTRY_CONFIG } from '@/lib/config';
 
 export default function AdminPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -65,7 +66,7 @@ export default function AdminPage() {
 
   // Calculate stats
   const uniqueEmails = new Set(entries.map(e => e.email.toLowerCase()));
-  const totalPot = entries.length * 10;
+  const totalPot = entries.length * ENTRY_CONFIG.entryFee;
   const topScore = entries.length > 0 ? Math.max(...entries.map(e => e.total_score)) : 0;
 
   if (loading) {

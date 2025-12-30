@@ -1,4 +1,5 @@
 import EntryForm from '@/components/EntryForm';
+import { ENTRY_CONFIG, PAYOUT_CONFIG, DISPLAY_CONFIG } from '@/lib/config';
 
 export default function Home() {
   return (
@@ -27,13 +28,13 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            2025-2026 NFL Playoffs
+            {DISPLAY_CONFIG.seasonLabel}
           </div>
 
           <h1 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
-            Fantasy Playoffs
+            {DISPLAY_CONFIG.title}
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
-              Bracket Challenge
+              {DISPLAY_CONFIG.subtitle}
             </span>
           </h1>
 
@@ -62,11 +63,11 @@ export default function Home() {
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-400">•</span>
-              Up to 5 teams allowed per person • $10 per team
+              Up to {ENTRY_CONFIG.maxTeamsPerPerson} teams allowed per person • ${ENTRY_CONFIG.entryFee} per team
             </li>
             <li className="flex items-center gap-2">
               <span className="text-emerald-400">•</span>
-              1st place: 90% of pot • 2nd place: 10%
+              1st place: {PAYOUT_CONFIG.firstPlace * 100}% of pot • 2nd place: {PAYOUT_CONFIG.secondPlace * 100}%
             </li>
           </ul>
         </div>
