@@ -2,25 +2,122 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// NFL teams in the 2025-2026 playoffs
-const PLAYOFF_TEAMS = [
+// NFL teams in the 2025-2026 playoffs (team abbreviations)
+const PLAYOFF_TEAM_ABBRS = [
    'BUF', 'BAL', 'KC', 'HOU', 'LAC', 'PIT', 'DEN', // AFC
    'DET', 'PHI', 'TB', 'LAR', 'MIN', 'WAS', 'GB'   // NFC
 ];
 
+interface Player {
+   id: string;
+   name: string;
+   team: string;
+   position: string;
+}
+
+interface ESPNTeam {
+   id: string;
+   abbreviation: string;
+}
+
 interface ESPNAthlete {
    id: string;
-   fullName: string;
+   displayName: string;
    position?: {
-      abbreviation: string;
-   };
-   team?: {
       abbreviation: string;
    };
 }
 
-interface ESPNResponse {
-   athletes?: ESPNAthlete[];
+interface ESPNRosterResponse {
+   athletes?: Array<{
+      items?: ESPNAthlete[];
+   }>;
+}
+
+// Cache for playoff team IDs and player data
+let playoffTeamIds: Map<string, string> | null = null; // abbreviation -> id
+let cachedPlayers: Player[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+async function getPlayoffTeamIds(): Promise<Map<string, string>> {
+   if (playoffTeamIds) {
+      return playoffTeamIds;
+   }
+
+   const response = await fetch(
+      'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams'
+   );
+
+   if (!response.ok) {
+      throw new Error('Failed to fetch teams');
+   }
+
+   const data = await response.json();
+   playoffTeamIds = new Map();
+
+   for (const teamData of data.sports?.[0]?.leagues?.[0]?.teams || []) {
+      const team: ESPNTeam = teamData.team;
+      if (PLAYOFF_TEAM_ABBRS.includes(team.abbreviation)) {
+         playoffTeamIds.set(team.abbreviation, team.id);
+      }
+   }
+
+   return playoffTeamIds;
+}
+
+async function fetchTeamRoster(teamId: string, teamAbbr: string): Promise<Player[]> {
+   const response = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${teamId}/roster`
+   );
+
+   if (!response.ok) {
+      console.error(`Failed to fetch roster for team ${teamId}`);
+      return [];
+   }
+
+   const data: ESPNRosterResponse = await response.json();
+   const players: Player[] = [];
+
+   // Roster is grouped by position groups (offense, defense, special teams)
+   for (const group of data.athletes || []) {
+      for (const athlete of group.items || []) {
+         const pos = athlete.position?.abbreviation;
+         if (pos && ['QB', 'WR', 'RB', 'TE'].includes(pos)) {
+            players.push({
+               id: athlete.id,
+               name: athlete.displayName,
+               team: teamAbbr,
+               position: pos,
+            });
+         }
+      }
+   }
+
+   return players;
+}
+
+async function fetchAllPlayoffPlayers(): Promise<Player[]> {
+   const now = Date.now();
+
+   // Return cached data if still valid
+   if (cachedPlayers && (now - cacheTimestamp) < CACHE_DURATION) {
+      return cachedPlayers;
+   }
+
+   const teamIds = await getPlayoffTeamIds();
+
+   // Fetch all team rosters in parallel
+   const rosterPromises: Promise<Player[]>[] = [];
+   for (const [abbr, id] of teamIds) {
+      rosterPromises.push(fetchTeamRoster(id, abbr));
+   }
+
+   const rosters = await Promise.all(rosterPromises);
+   cachedPlayers = rosters.flat().sort((a, b) => a.name.localeCompare(b.name));
+   cacheTimestamp = now;
+
+   return cachedPlayers;
 }
 
 export async function GET(request: Request) {
@@ -33,36 +130,14 @@ export async function GET(request: Request) {
    }
 
    try {
-      // Fetch players from ESPN's public API
-      const response = await fetch(
-         `https://site.api.espn.com/apis/site/v2/sports/football/nfl/athletes?limit=1000`,
-         { next: { revalidate: 3600 } } // Cache for 1 hour
-      );
+      const allPlayers = await fetchAllPlayoffPlayers();
 
-      if (!response.ok) {
-         throw new Error('Failed to fetch players');
-      }
-
-      const data: ESPNResponse = await response.json();
-
-      // Filter players by position and playoff teams
-      const players = (data.athletes || [])
-         .filter((player: ESPNAthlete) => {
-            const teamAbbr = player.team?.abbreviation;
-            const positionAbbr = player.position?.abbreviation;
-            const matchesPosition = positionAbbr === position;
-            const isPlayoffTeam = teamAbbr && PLAYOFF_TEAMS.includes(teamAbbr);
-            const matchesSearch = search === '' || player.fullName.toLowerCase().includes(search);
-
-            return matchesPosition && isPlayoffTeam && matchesSearch;
-         })
-         .map((player: ESPNAthlete) => ({
-            id: player.id,
-            name: player.fullName,
-            team: player.team?.abbreviation || 'Unknown',
-            position: player.position?.abbreviation || position,
-         }))
-         .sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name));
+      // Filter by position and search term
+      const players = allPlayers.filter((player) => {
+         const matchesPosition = player.position === position;
+         const matchesSearch = search === '' || player.name.toLowerCase().includes(search);
+         return matchesPosition && matchesSearch;
+      });
 
       return NextResponse.json({ players });
    } catch (error) {
@@ -70,4 +145,3 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch players' }, { status: 500 });
    }
 }
-
