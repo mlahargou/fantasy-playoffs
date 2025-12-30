@@ -102,8 +102,8 @@ export default function PlayerSelect({ position, label, value, onChange, disable
 
          <div
             className={`relative rounded-xl border bg-gradient-to-br backdrop-blur-sm transition-all duration-200 ${positionColors[position]} ${disabled
-                  ? 'opacity-75 cursor-default'
-                  : `cursor-pointer ${isOpen ? 'ring-2 ring-white/20 shadow-xl' : 'hover:shadow-lg hover:border-white/20'}`
+               ? 'opacity-75 cursor-default'
+               : `cursor-pointer ${isOpen ? 'ring-2 ring-white/20 shadow-xl' : 'hover:shadow-lg hover:border-white/20'}`
                }`}
             onClick={handleClick}
          >
