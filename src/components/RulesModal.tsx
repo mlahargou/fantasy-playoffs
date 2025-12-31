@@ -104,7 +104,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
               </li>
               <li className="flex gap-3">
                 <span className="text-blue-400 shrink-0 leading-relaxed">→</span>
-                <span>Submissions close <strong className="text-white">{ENTRY_CONFIG.submissionDeadline.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong></span>
+                <span>Submissions close <strong className="text-white">{ENTRY_CONFIG.submissionDeadline.toLocaleString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles', timeZoneName: 'short' })}</strong></span>
               </li>
               <li className="flex gap-3">
                 <span className="text-blue-400 shrink-0 leading-relaxed">→</span>

@@ -22,9 +22,9 @@ export const SCORING_CONFIG = {
 export const ENTRY_CONFIG = {
    maxTeamsPerPerson: 5,
    entryFee: 10, // dollars per team
-   // Submission deadline: Wild Card Saturday (midnight PST / 3am EST)
+   // Submission deadline: Friday before Wild Card Weekend at 11:59 PM PST
    // After this time, the homepage shows the leaderboard instead of the entry form
-   submissionDeadline: new Date('2026-01-10T08:00:00Z'), // 00:00 PST = 08:00 UTC
+   submissionDeadline: new Date('2026-01-10T07:59:00Z'), // 11:59 PM PST Jan 9 = 07:59 UTC Jan 10
 };
 
 // Payout structure (percentages that should add up to 1.0)
