@@ -164,7 +164,7 @@ export async function GET(request: Request) {
          });
       }
 
-      // Otherwise return all entries (for admin)
+      // Otherwise return all entries (for leaderboard)
       const entries = await sql`
       SELECT * FROM entries ORDER BY created_at DESC
     `;

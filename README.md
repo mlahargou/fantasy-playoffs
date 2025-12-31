@@ -56,7 +56,7 @@ The database table will be automatically created on the first API request.
 
 - `GET /api/players?position=QB&search=mahomes` - Search players by position
 - `POST /api/entries` - Submit a new team entry
-- `GET /api/entries` - List all entries (for admin viewing)
+- `GET /api/entries` - List all entries (for leaderboard)
 
 ## Project Structure
 

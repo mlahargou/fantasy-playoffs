@@ -1,4 +1,4 @@
-export { default as AdminHeader } from './AdminHeader';
+export { default as LeaderboardHeader } from './LeaderboardHeader';
 export { default as StatsCards } from './StatsCards';
 export { default as LeaderboardTable } from './LeaderboardTable';
 export { default as PayoutCard } from './PayoutCard';

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Entry, ScoringConfig, SortField, SortDirection } from './types';
 import {
-  AdminHeader,
+  LeaderboardHeader,
   StatsCards,
   LeaderboardTable,
   PayoutCard,
@@ -12,7 +12,7 @@ import {
 } from './components';
 import { ENTRY_CONFIG } from '@/lib/config';
 
-export default function AdminPage() {
+export default function LeaderboardPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [config, setConfig] = useState<ScoringConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +80,7 @@ export default function AdminPage() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 md:p-10">
       <div className="max-w-7xl mx-auto">
-        <AdminHeader config={config} />
+        <LeaderboardHeader config={config} />
 
         <StatsCards
           totalEntries={entries.length}
@@ -114,3 +114,4 @@ export default function AdminPage() {
     </main>
   );
 }
+
