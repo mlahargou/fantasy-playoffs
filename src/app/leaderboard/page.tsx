@@ -6,15 +6,19 @@ import {
   LeaderboardHeader,
   StatsCards,
   LeaderboardTable,
+  LeaderboardFilters,
   PayoutCard,
   LoadingState,
   ErrorState,
+  Filters,
 } from './components';
 import { ENTRY_CONFIG } from '@/lib/config';
 
 interface LeaderboardPageProps {
   hideBackLink?: boolean;
 }
+
+const emptyFilters: Filters = { email: '', qb: '', wr: '', rb: '', te: '' };
 
 export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPageProps) {
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -23,6 +27,7 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('total_score');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
 
   useEffect(() => {
     const fetchEntries = async () => {
@@ -51,7 +56,17 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
     }
   };
 
-  const sortedEntries = [...entries].sort((a, b) => {
+  // Apply filters
+  const filteredEntries = entries.filter((entry) => {
+    if (filters.email && entry.email !== filters.email) return false;
+    if (filters.qb && entry.qb_name !== filters.qb) return false;
+    if (filters.wr && entry.wr_name !== filters.wr) return false;
+    if (filters.rb && entry.rb_name !== filters.rb) return false;
+    if (filters.te && entry.te_name !== filters.te) return false;
+    return true;
+  });
+
+  const sortedEntries = [...filteredEntries].sort((a, b) => {
     const aVal = a[sortField];
     const bVal = b[sortField];
 
@@ -68,7 +83,7 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
     return 0;
   });
 
-  // Calculate stats
+  // Calculate stats (always from all entries, not filtered)
   const uniqueEmails = new Set(entries.map(e => e.email.toLowerCase()));
   const totalPot = entries.length * ENTRY_CONFIG.entryFee;
   const topScore = entries.length > 0 ? Math.max(...entries.map(e => e.total_score)) : 0;
@@ -91,6 +106,12 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
           uniquePlayers={uniqueEmails.size}
           totalPot={totalPot}
           topScore={topScore}
+        />
+
+        <LeaderboardFilters
+          entries={entries}
+          filters={filters}
+          onFilterChange={setFilters}
         />
 
         <LeaderboardTable
