@@ -81,10 +81,6 @@ export default function EntryFormPage() {
           <EntryForm />
         </div>
 
-        {/* Footer */}
-        <p className="text-center text-slate-500 text-sm mt-8">
-          Payment required up front. Contact the commissioner with questions.
-        </p>
       </div>
 
       {/* Rules Modal */}

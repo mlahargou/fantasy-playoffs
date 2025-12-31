@@ -73,15 +73,15 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
             </h3>
             <ul className="space-y-2 text-slate-300 text-sm leading-relaxed">
               <li className="flex gap-3">
-                <span className="text-emerald-400 mt-1">→</span>
+                <span className="text-emerald-400 shrink-0 leading-relaxed">→</span>
                 <span>Pick <strong className="text-white">1 QB, 1 WR, 1 RB, and 1 TE</strong> from any team in the postseason</span>
               </li>
               <li className="flex gap-3">
-                <span className="text-emerald-400 mt-1">→</span>
+                <span className="text-emerald-400 shrink-0 leading-relaxed">→</span>
                 <span>Your picks are <strong className="text-white">locked for the entire postseason</strong> — choose wisely!</span>
               </li>
               <li className="flex gap-3">
-                <span className="text-emerald-400 mt-1">→</span>
+                <span className="text-emerald-400 shrink-0 leading-relaxed">→</span>
                 <span>Players accumulate points from Wild Card through Super Bowl</span>
               </li>
             </ul>
@@ -95,19 +95,19 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
             </h3>
             <ul className="space-y-2 text-slate-300 text-sm leading-relaxed">
               <li className="flex gap-3">
-                <span className="text-blue-400 mt-1">→</span>
+                <span className="text-blue-400 shrink-0 leading-relaxed">→</span>
                 <span>Entry fee: <strong className="text-white">${ENTRY_CONFIG.entryFee}</strong> per team</span>
               </li>
               <li className="flex gap-3">
-                <span className="text-blue-400 mt-1">→</span>
+                <span className="text-blue-400 shrink-0 leading-relaxed">→</span>
                 <span>Maximum <strong className="text-white">{ENTRY_CONFIG.maxTeamsPerPerson} teams</strong> per person</span>
               </li>
               <li className="flex gap-3">
-                <span className="text-blue-400 mt-1">→</span>
+                <span className="text-blue-400 shrink-0 leading-relaxed">→</span>
                 <span>Submissions close <strong className="text-white">{ENTRY_CONFIG.submissionDeadline.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</strong></span>
               </li>
               <li className="flex gap-3">
-                <span className="text-blue-400 mt-1">→</span>
+                <span className="text-blue-400 shrink-0 leading-relaxed">→</span>
                 <span>Payment required by deadline or your teams will be <strong className="text-red-400">invalidated</strong></span>
               </li>
             </ul>
@@ -121,15 +121,15 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
             </h3>
             <ul className="space-y-2 text-slate-300 text-sm leading-relaxed">
               <li className="flex gap-3">
-                <span className="text-purple-400 mt-1">→</span>
+                <span className="text-purple-400 shrink-0 leading-relaxed">→</span>
                 <span><strong className="text-white">Standard scoring</strong> (non-PPR)</span>
               </li>
               <li className="flex gap-3">
-                <span className="text-purple-400 mt-1">→</span>
+                <span className="text-purple-400 shrink-0 leading-relaxed">→</span>
                 <span>Only postseason game stats count toward your total</span>
               </li>
               <li className="flex gap-3">
-                <span className="text-purple-400 mt-1">→</span>
+                <span className="text-purple-400 shrink-0 leading-relaxed">→</span>
                 <span>When your player&apos;s team gets eliminated, they stop earning points</span>
               </li>
             </ul>
@@ -167,6 +167,24 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
                 </li>
               </ul>
             </div>
+          </section>
+
+          {/* Payment Methods */}
+          <section>
+            <h3 className="text-lg font-bold text-teal-400 mb-3 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-teal-500/20 flex items-center justify-center text-sm">5</span>
+              Payment Methods
+            </h3>
+            <ul className="space-y-2 text-slate-300 text-sm leading-relaxed">
+              <li className="flex gap-3">
+                <span className="text-teal-400 shrink-0 leading-relaxed">→</span>
+                <span><strong className="text-white">Venmo:</strong> @michael-lahargou</span>
+              </li>
+              <li className="flex gap-3">
+                <span className="text-teal-400 shrink-0 leading-relaxed">→</span>
+                <span><strong className="text-white">Cash:</strong> In person</span>
+              </li>
+            </ul>
           </section>
 
           {/* Important Notes */}
