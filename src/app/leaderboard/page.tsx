@@ -12,7 +12,11 @@ import {
 } from './components';
 import { ENTRY_CONFIG } from '@/lib/config';
 
-export default function LeaderboardPage() {
+interface LeaderboardPageProps {
+  hideBackLink?: boolean;
+}
+
+export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPageProps) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [config, setConfig] = useState<ScoringConfig | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,18 +102,20 @@ export default function LeaderboardPage() {
 
         {entries.length > 0 && <PayoutCard totalPot={totalPot} />}
 
-        {/* Back link */}
-        <div className="mt-8">
-          <a
-            href="/"
-            className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Entry Form
-          </a>
-        </div>
+        {/* Back link - only show when not on homepage */}
+        {!hideBackLink && (
+          <div className="mt-8">
+            <a
+              href="/"
+              className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Entry Form
+            </a>
+          </div>
+        )}
       </div>
     </main>
   );
