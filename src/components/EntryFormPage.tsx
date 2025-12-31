@@ -1,9 +1,28 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import EntryForm from './EntryForm';
-import { ENTRY_CONFIG, PAYOUT_CONFIG, DISPLAY_CONFIG } from '@/lib/config';
+import RulesModal from './RulesModal';
+import { DISPLAY_CONFIG } from '@/lib/config';
+
+const RULES_SEEN_KEY = 'fantasy-playoffs-rules-seen';
 
 export default function EntryFormPage() {
+  const [showRules, setShowRules] = useState(false);
+
+  useEffect(() => {
+    // Show rules modal on first visit
+    const hasSeenRules = localStorage.getItem(RULES_SEEN_KEY);
+    if (!hasSeenRules) {
+      setShowRules(true);
+    }
+  }, []);
+
+  const handleCloseRules = () => {
+    setShowRules(false);
+    localStorage.setItem(RULES_SEEN_KEY, 'true');
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
       {/* Background decorations */}
@@ -44,34 +63,17 @@ export default function EntryFormPage() {
             Pick your QB, WR, RB, and TE for the entire playoff run.
             Standard scoring from Wild Card through Super Bowl.
           </p>
-        </div>
 
-        {/* Rules Card */}
-        <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 mb-10">
-          <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          {/* Rules button */}
+          <button
+            onClick={() => setShowRules(true)}
+            className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700/50 hover:border-slate-600 text-slate-300 hover:text-white text-sm font-medium transition-all duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            How It Works
-          </h2>
-          <ul className="space-y-2 text-slate-300 text-sm">
-            <li className="flex items-center gap-2">
-              <span className="text-emerald-400">•</span>
-              Your picks stay with you the entire playoffs
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-emerald-400">•</span>
-              Players earn points only for playoff games played
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-emerald-400">•</span>
-              Up to {ENTRY_CONFIG.maxTeamsPerPerson} teams allowed per person • ${ENTRY_CONFIG.entryFee} per team
-            </li>
-            <li className="flex items-center gap-2">
-              <span className="text-emerald-400">•</span>
-              1st place: {PAYOUT_CONFIG.firstPlace * 100}% of pot • 2nd place: {PAYOUT_CONFIG.secondPlace * 100}%
-            </li>
-          </ul>
+            View Official Rules
+          </button>
         </div>
 
         {/* Form */}
@@ -84,6 +86,9 @@ export default function EntryFormPage() {
           Payment required up front. Contact the commissioner with questions.
         </p>
       </div>
+
+      {/* Rules Modal */}
+      <RulesModal isOpen={showRules} onClose={handleCloseRules} />
     </main>
   );
 }

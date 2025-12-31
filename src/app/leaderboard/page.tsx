@@ -12,6 +12,7 @@ import {
   ErrorState,
   Filters,
 } from './components';
+import RulesModal from '@/components/RulesModal';
 import { ENTRY_CONFIG } from '@/lib/config';
 
 interface LeaderboardPageProps {
@@ -26,6 +27,7 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     const fetchEntries = async () => {
@@ -93,9 +95,9 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
 
         {entries.length > 0 && <PayoutCard totalPot={totalPot} />}
 
-        {/* Back link - only show when not on homepage */}
-        {!hideBackLink && (
-          <div className="mt-8">
+        {/* Footer links */}
+        <div className="mt-8 flex items-center gap-6">
+          {!hideBackLink && (
             <a
               href="/"
               className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2"
@@ -105,9 +107,21 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
               </svg>
               Back to Entry Form
             </a>
-          </div>
-        )}
+          )}
+          <button
+            onClick={() => setShowRules(true)}
+            className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            View Rules
+          </button>
+        </div>
       </div>
+
+      {/* Rules Modal */}
+      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
     </main>
   );
 }
