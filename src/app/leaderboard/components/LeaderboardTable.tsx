@@ -67,7 +67,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 TE
               </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider sticky right-0 bg-slate-800/50">
                 Total
               </th>
             </tr>
@@ -95,7 +95,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                   <PlayerCell name={entry.wr_name} team={entry.wr_team} score={entry.score_breakdown.wr} />
                   <PlayerCell name={entry.rb_name} team={entry.rb_team} score={entry.score_breakdown.rb} />
                   <PlayerCell name={entry.te_name} team={entry.te_team} score={entry.score_breakdown.te} />
-                  <td className="px-4 py-3 text-right">
+                  <td className={`px-4 py-3 text-right sticky right-0 ${isLeader ? 'bg-[#1a1f2e]' : 'bg-slate-900'}`}>
                     <span className={`text-lg font-bold ${isLeader ? 'text-amber-400' : 'text-white'}`}>
                       {entry.total_score.toFixed(1)}
                     </span>
