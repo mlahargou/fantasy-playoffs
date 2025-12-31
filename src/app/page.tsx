@@ -6,7 +6,7 @@ import LeaderboardPage from './leaderboard/page';
 
 export default function Home() {
   const now = new Date();
-  const submissionsClosed = now >= ENTRY_CONFIG.submissionDeadline;
+  const submissionsClosed = now >= ENTRY_CONFIG.submissionWindowClosed;
 
   if (submissionsClosed) {
     return <LeaderboardPage hideBackLink />;
