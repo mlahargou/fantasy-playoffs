@@ -1,26 +1,9 @@
 'use client';
 
-import { Entry, SortField, SortDirection } from '../types';
+import { Entry } from '../types';
 
 interface LeaderboardTableProps {
   entries: Entry[];
-  sortField: SortField;
-  sortDirection: SortDirection;
-  onSort: (field: SortField) => void;
-}
-
-function SortIcon({ active, direction }: { active: boolean; direction: SortDirection }) {
-  if (!active) return null;
-  return (
-    <svg className="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d={direction === 'asc' ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'}
-      />
-    </svg>
-  );
 }
 
 function PlayerCell({ name, team, score }: { name: string; team: string; score: number }) {
@@ -34,14 +17,12 @@ function PlayerCell({ name, team, score }: { name: string; team: string; score: 
   );
 }
 
-function RankBadge({ rank }: { rank: number | null }) {
-  if (!rank) return null;
-
+function RankBadge({ rank }: { rank: number }) {
   const colorClass =
     rank === 1 ? 'bg-amber-500/20 text-amber-400' :
-    rank === 2 ? 'bg-slate-400/20 text-slate-300' :
-    rank === 3 ? 'bg-orange-500/20 text-orange-400' :
-    'text-slate-500';
+      rank === 2 ? 'bg-slate-400/20 text-slate-300' :
+        rank === 3 ? 'bg-orange-500/20 text-orange-400' :
+          'text-slate-500';
 
   return (
     <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${colorClass}`}>
@@ -50,7 +31,7 @@ function RankBadge({ rank }: { rank: number | null }) {
   );
 }
 
-export default function LeaderboardTable({ entries, sortField, sortDirection, onSort }: LeaderboardTableProps) {
+export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
   if (entries.length === 0) {
     return (
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-12 text-center">
@@ -68,12 +49,8 @@ export default function LeaderboardTable({ entries, sortField, sortDirection, on
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 Rank
               </th>
-              <th
-                onClick={() => onSort('email')}
-                className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
-              >
+              <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 Email
-                <SortIcon active={sortField === 'email'} direction={sortDirection} />
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 #
@@ -90,18 +67,14 @@ export default function LeaderboardTable({ entries, sortField, sortDirection, on
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 TE
               </th>
-              <th
-                onClick={() => onSort('total_score')}
-                className="px-4 py-3 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
-              >
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 Total
-                <SortIcon active={sortField === 'total_score'} direction={sortDirection} />
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
             {entries.map((entry, index) => {
-              const rank = sortField === 'total_score' && sortDirection === 'desc' ? index + 1 : null;
+              const rank = index + 1;
               const isLeader = rank === 1;
 
               return (
@@ -136,4 +109,3 @@ export default function LeaderboardTable({ entries, sortField, sortDirection, on
     </div>
   );
 }
-

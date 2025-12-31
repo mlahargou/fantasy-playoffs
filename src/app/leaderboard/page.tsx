@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Entry, ScoringConfig, SortField, SortDirection } from './types';
+import { Entry, ScoringConfig } from './types';
 import {
   LeaderboardHeader,
   StatsCards,
@@ -25,8 +25,6 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
   const [config, setConfig] = useState<ScoringConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<SortField>('total_score');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [filters, setFilters] = useState<Filters>(emptyFilters);
 
   useEffect(() => {
@@ -47,15 +45,6 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
     fetchEntries();
   }, []);
 
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection(field === 'total_score' ? 'desc' : 'asc');
-    }
-  };
-
   // Apply filters
   const filteredEntries = entries.filter((entry) => {
     if (filters.email && entry.email !== filters.email) return false;
@@ -66,22 +55,8 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
     return true;
   });
 
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    const aVal = a[sortField];
-    const bVal = b[sortField];
-
-    if (typeof aVal === 'string' && typeof bVal === 'string') {
-      return sortDirection === 'asc'
-        ? aVal.localeCompare(bVal)
-        : bVal.localeCompare(aVal);
-    }
-
-    if (typeof aVal === 'number' && typeof bVal === 'number') {
-      return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
-    }
-
-    return 0;
-  });
+  // Sort by score descending
+  const sortedEntries = [...filteredEntries].sort((a, b) => b.total_score - a.total_score);
 
   // Calculate stats (always from all entries, not filtered)
   const uniqueEmails = new Set(entries.map(e => e.email.toLowerCase()));
@@ -114,12 +89,7 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
           onFilterChange={setFilters}
         />
 
-        <LeaderboardTable
-          entries={sortedEntries}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-        />
+        <LeaderboardTable entries={sortedEntries} />
 
         {entries.length > 0 && <PayoutCard totalPot={totalPot} />}
 

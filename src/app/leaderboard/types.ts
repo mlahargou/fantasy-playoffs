@@ -28,6 +28,3 @@ export interface ScoringConfig {
   weeks: number[];
 }
 
-export type SortField = 'total_score' | 'email' | 'created_at';
-export type SortDirection = 'asc' | 'desc';
-
