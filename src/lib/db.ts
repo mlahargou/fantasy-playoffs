@@ -47,6 +47,17 @@ export async function initializeDatabase() {
       UNIQUE(user_id, team_number)
     )
   `;
+
+   // Create payments tracking table
+   await db`
+    CREATE TABLE IF NOT EXISTS user_payments (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER UNIQUE NOT NULL REFERENCES users(id),
+      teams_paid INTEGER NOT NULL DEFAULT 0,
+      notes TEXT,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
 }
 
 // Helper to get or create a user by email
