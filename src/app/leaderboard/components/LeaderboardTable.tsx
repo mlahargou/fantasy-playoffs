@@ -1,6 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Entry } from '../types';
+
+const ENTRIES_PER_PAGE = 10;
 
 interface LeaderboardTableProps {
   entries: Entry[];
@@ -43,6 +46,13 @@ function RankBadge({ rank }: { rank: number }) {
 }
 
 export default function LeaderboardTable({ entries, hidePlayerSelections = false }: LeaderboardTableProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(entries.length / ENTRIES_PER_PAGE);
+  const startIndex = (currentPage - 1) * ENTRIES_PER_PAGE;
+  const endIndex = startIndex + ENTRIES_PER_PAGE;
+  const paginatedEntries = entries.slice(startIndex, endIndex);
+
   if (entries.length === 0) {
     return (
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-12 text-center">
@@ -84,8 +94,8 @@ export default function LeaderboardTable({ entries, hidePlayerSelections = false
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
-            {entries.map((entry, index) => {
-              const rank = index + 1;
+            {paginatedEntries.map((entry, index) => {
+              const rank = startIndex + index + 1;
               const isLeader = rank === 1 && !hidePlayerSelections;
 
               return (
@@ -138,6 +148,60 @@ export default function LeaderboardTable({ entries, hidePlayerSelections = false
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-700/50 bg-slate-800/20">
+          <div className="text-sm text-slate-400 order-2 sm:order-1">
+            {startIndex + 1}–{Math.min(endIndex, entries.length)} of {entries.length}
+          </div>
+          <div className="flex items-center gap-1 order-1 sm:order-2">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="First page"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Previous page"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span className="px-2 py-1 text-sm text-slate-300 whitespace-nowrap">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Next page"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              aria-label="Last page"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
