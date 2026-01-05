@@ -29,8 +29,7 @@ export async function initializeDatabase() {
    await db`
     CREATE TABLE IF NOT EXISTS entries (
       id SERIAL PRIMARY KEY,
-      email VARCHAR(255) NOT NULL,
-      user_id INTEGER REFERENCES users(id),
+      user_id INTEGER NOT NULL REFERENCES users(id),
       team_number INTEGER NOT NULL CHECK (team_number >= 1 AND team_number <= 5),
       qb_id VARCHAR(100) NOT NULL,
       qb_name VARCHAR(255) NOT NULL,
@@ -45,21 +44,8 @@ export async function initializeDatabase() {
       te_name VARCHAR(255) NOT NULL,
       te_team VARCHAR(50) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(email, team_number)
+      UNIQUE(user_id, team_number)
     )
-  `;
-
-   // Add user_id column if it doesn't exist (for existing databases)
-   await db`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'entries' AND column_name = 'user_id'
-      ) THEN
-        ALTER TABLE entries ADD COLUMN user_id INTEGER REFERENCES users(id);
-      END IF;
-    END $$;
   `;
 }
 
@@ -91,27 +77,3 @@ export async function getOrCreateUser(email: string, name: string): Promise<{ id
    return newUsers[0] as { id: number; email: string; name: string };
 }
 
-// Helper to backfill user_id for existing entries
-export async function backfillUserIds(): Promise<number> {
-   const db = getDb();
-
-   // Create users for any emails that don't have users yet (using email as name placeholder)
-   await db`
-    INSERT INTO users (email, name)
-    SELECT DISTINCT LOWER(email), LOWER(email)
-    FROM entries
-    WHERE LOWER(email) NOT IN (SELECT email FROM users)
-    ON CONFLICT (email) DO NOTHING
-  `;
-
-   // Update entries that don't have user_id set
-   const result = await db`
-    UPDATE entries e
-    SET user_id = u.id
-    FROM users u
-    WHERE LOWER(e.email) = u.email AND e.user_id IS NULL
-    RETURNING e.id
-  `;
-
-   return result.length;
-}

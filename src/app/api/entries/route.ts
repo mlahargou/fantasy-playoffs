@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
       // Check how many teams this person already has
       const existingTeams = await sql`
-      SELECT team_number FROM entries WHERE LOWER(email) = LOWER(${email})
+      SELECT team_number FROM entries WHERE user_id = ${user.id}
     `;
 
       if (existingTeams.length >= ENTRY_CONFIG.maxTeamsPerPerson) {
@@ -86,13 +86,13 @@ export async function POST(request: Request) {
       // Insert the entry with user_id
       await sql`
       INSERT INTO entries (
-        email, user_id, team_number,
+        user_id, team_number,
         qb_id, qb_name, qb_team,
         wr_id, wr_name, wr_team,
         rb_id, rb_name, rb_team,
         te_id, te_name, te_team
       ) VALUES (
-        ${email.toLowerCase()}, ${user.id}, ${teamNumber},
+        ${user.id}, ${teamNumber},
         ${qb.id}, ${qb.name}, ${qb.team},
         ${wr.id}, ${wr.name}, ${wr.team},
         ${rb.id}, ${rb.name}, ${rb.team},
@@ -128,7 +128,18 @@ export async function GET(request: Request) {
          const users = await sql`
           SELECT id, name FROM users WHERE email = LOWER(${email})
         `;
-         const userName = users.length > 0 ? users[0].name : null;
+
+         if (users.length === 0) {
+            // User doesn't exist yet
+            return NextResponse.json({
+               submittedTeams: [],
+               teams: {},
+               userName: null,
+            });
+         }
+
+         const user = users[0];
+         const userName = user.name;
 
          const entries = await sql`
           SELECT
@@ -138,7 +149,7 @@ export async function GET(request: Request) {
             rb_id, rb_name, rb_team,
             te_id, te_name, te_team
           FROM entries
-          WHERE LOWER(email) = LOWER(${email})
+          WHERE user_id = ${user.id}
           ORDER BY team_number
         `;
 
@@ -193,11 +204,11 @@ export async function GET(request: Request) {
          });
       }
 
-      // Otherwise return all entries (for leaderboard) - join with users to get names
+      // Otherwise return all entries (for leaderboard) - join with users to get names and emails
       const entries = await sql`
-      SELECT e.*, u.name as user_name
+      SELECT e.*, u.name as user_name, u.email as email
       FROM entries e
-      LEFT JOIN users u ON e.user_id = u.id
+      JOIN users u ON e.user_id = u.id
       ORDER BY e.created_at DESC
     `;
 

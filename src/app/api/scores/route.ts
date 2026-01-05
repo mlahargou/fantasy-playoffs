@@ -37,11 +37,11 @@ export async function GET() {
     await initializeDatabase();
     const sql = getDb();
 
-    // Join with users table to get names
+    // Join with users table to get names and emails
     const entries = await sql`
-      SELECT e.*, u.name as user_name
+      SELECT e.*, u.name as user_name, u.email as email
       FROM entries e
-      LEFT JOIN users u ON e.user_id = u.id
+      JOIN users u ON e.user_id = u.id
       ORDER BY e.created_at DESC
     `;
 
