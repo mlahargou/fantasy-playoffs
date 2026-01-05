@@ -61,7 +61,7 @@ export default function LeaderboardTable({ entries, hidePlayerSelections = false
                 #
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Email
+                Name
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 Team
@@ -96,7 +96,14 @@ export default function LeaderboardTable({ entries, hidePlayerSelections = false
                   <td className="px-4 py-3">
                     <RankBadge rank={rank} />
                   </td>
-                  <td className="px-4 py-3 text-white font-medium">{entry.email}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col">
+                      <span className="text-white font-medium">{entry.user_name || entry.email}</span>
+                      {entry.user_name && (
+                        <span className="text-xs text-slate-500">{entry.email}</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm font-bold">
                       {entry.team_number}

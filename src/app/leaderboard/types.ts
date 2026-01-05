@@ -8,6 +8,7 @@ export interface ScoreBreakdown {
 export interface Entry {
   id: number;
   email: string;
+  user_name: string | null;
   team_number: number;
   qb_name: string;
   qb_team: string;

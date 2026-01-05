@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 interface EntryWithScore {
   id: number;
   email: string;
+  user_name: string | null;
   team_number: number;
   qb_id: string;
   qb_name: string;
@@ -36,8 +37,12 @@ export async function GET() {
     await initializeDatabase();
     const sql = getDb();
 
+    // Join with users table to get names
     const entries = await sql`
-      SELECT * FROM entries ORDER BY created_at DESC
+      SELECT e.*, u.name as user_name
+      FROM entries e
+      LEFT JOIN users u ON e.user_id = u.id
+      ORDER BY e.created_at DESC
     `;
 
     // Calculate scores for all entries in parallel

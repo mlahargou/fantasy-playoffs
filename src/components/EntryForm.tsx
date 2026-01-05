@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import EmailStep from './EmailStep';
+import NameStep from './NameStep';
 import EmailHeader from './EmailHeader';
 import TeamSelector from './TeamSelector';
 import PlayerSelections from './PlayerSelections';
@@ -23,11 +24,14 @@ interface TeamSelections {
    totalScore?: number;
 }
 
+type Step = 'email' | 'name' | 'teams';
+
 export default function EntryForm() {
-   // Email state
+   // User state
    const [email, setEmail] = useState('');
-   const [emailConfirmed, setEmailConfirmed] = useState(false);
-   const [loadingEmail, setLoadingEmail] = useState(false);
+   const [name, setName] = useState('');
+   const [step, setStep] = useState<Step>('email');
+   const [loading, setLoading] = useState(false);
 
    // Team state
    const [teamNumber, setTeamNumber] = useState(1);
@@ -56,16 +60,18 @@ export default function EntryForm() {
 
    const isFormValid = qb && wr && rb && te;
 
+   // Step 1: Check if email exists
    const handleEmailSubmit = async () => {
       setMessage(null);
 
       const trimmedEmail = email.trim().toLowerCase();
+
       if (!trimmedEmail || !trimmedEmail.includes('@')) {
          setMessage({ type: 'error', text: 'Please enter a valid email address' });
          return;
       }
 
-      setLoadingEmail(true);
+      setLoading(true);
       try {
          const response = await fetch(`/api/entries?email=${encodeURIComponent(trimmedEmail)}`);
          if (response.ok) {
@@ -82,21 +88,54 @@ export default function EntryForm() {
             } else if (teams.size > 0) {
                setTeamNumber(1);
             }
+
+            // If user already exists, skip to teams step
+            if (data.userName) {
+               setName(data.userName);
+               setStep('teams');
+            } else {
+               // New user - need to collect name
+               setStep('name');
+            }
+         } else {
+            // No existing user found - need to collect name
+            setStep('name');
          }
-         setEmailConfirmed(true);
       } catch (error) {
          console.error('Error checking email:', error);
-         setEmailConfirmed(true);
+         // On error, still allow them to proceed to name step
+         setStep('name');
       } finally {
-         setLoadingEmail(false);
+         setLoading(false);
       }
    };
 
+   // Step 2: Save name and proceed
+   const handleNameSubmit = async () => {
+      setMessage(null);
+
+      const trimmedName = name.trim();
+      if (!trimmedName || trimmedName.length < 2) {
+         setMessage({ type: 'error', text: 'Please enter your name (at least 2 characters)' });
+         return;
+      }
+
+      // Name will be saved when they submit their first entry
+      setStep('teams');
+   };
+
+   const handleBackToEmail = () => {
+      setStep('email');
+      setName('');
+      setMessage(null);
+   };
+
    const handleChangeEmail = () => {
-      setEmailConfirmed(false);
+      setStep('email');
       setSubmittedTeams(new Set());
       setSavedTeams({});
       setMessage(null);
+      setName('');
       clearPlayerSelections();
    };
 
@@ -134,6 +173,7 @@ export default function EntryForm() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                email: email.trim().toLowerCase(),
+               name: name.trim(),
                teamNumber,
                qb, wr, rb, te
             }),
@@ -189,19 +229,34 @@ export default function EntryForm() {
    };
 
    // Step 1: Email entry
-   if (!emailConfirmed) {
+   if (step === 'email') {
       return (
          <EmailStep
             email={email}
             setEmail={setEmail}
             onSubmit={handleEmailSubmit}
-            loading={loadingEmail}
+            loading={loading}
             error={message?.type === 'error' ? message.text : null}
          />
       );
    }
 
-   // Step 2: Team selection
+   // Step 2: Name entry (only for new users)
+   if (step === 'name') {
+      return (
+         <NameStep
+            email={email}
+            name={name}
+            setName={setName}
+            onSubmit={handleNameSubmit}
+            onBack={handleBackToEmail}
+            loading={loading}
+            error={message?.type === 'error' ? message.text : null}
+         />
+      );
+   }
+
+   // Step 3: Team selection
    return (
       <form onSubmit={handleTeamSubmit} className="space-y-8">
          <EmailHeader

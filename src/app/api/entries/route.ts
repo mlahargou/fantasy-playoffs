@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDb, initializeDatabase } from '@/lib/db';
+import { getDb, initializeDatabase, getOrCreateUser } from '@/lib/db';
 import { calculatePlayerScore } from '@/lib/sleeper';
 import { ENTRY_CONFIG } from '@/lib/config';
 
@@ -12,9 +12,9 @@ export async function POST(request: Request) {
       const sql = getDb();
 
       const body = await request.json();
-      const { email, teamNumber, qb, wr, rb, te } = body;
+      const { email, name, teamNumber, qb, wr, rb, te } = body;
 
-      // Validate required fields
+      // Validate required fields (name is optional for returning users)
       if (!email || !teamNumber || !qb || !wr || !rb || !te) {
          return NextResponse.json(
             { error: 'All fields are required' },
@@ -36,6 +36,28 @@ export async function POST(request: Request) {
             { error: `Team number must be between 1 and ${ENTRY_CONFIG.maxTeamsPerPerson}` },
             { status: 400 }
          );
+      }
+
+      // Check if user already exists
+      const normalizedEmail = email.toLowerCase().trim();
+      const existingUsers = await sql`
+         SELECT id, name FROM users WHERE email = ${normalizedEmail}
+      `;
+
+      let user;
+      if (existingUsers.length > 0) {
+         // Existing user - use their stored info
+         user = existingUsers[0];
+      } else {
+         // New user - name is required
+         if (!name || name.trim().length < 2) {
+            return NextResponse.json(
+               { error: 'Please enter your name' },
+               { status: 400 }
+            );
+         }
+         // Create new user
+         user = await getOrCreateUser(email, name.trim());
       }
 
       // Check how many teams this person already has
@@ -61,16 +83,16 @@ export async function POST(request: Request) {
          );
       }
 
-      // Insert the entry
+      // Insert the entry with user_id
       await sql`
       INSERT INTO entries (
-        email, team_number,
+        email, user_id, team_number,
         qb_id, qb_name, qb_team,
         wr_id, wr_name, wr_team,
         rb_id, rb_name, rb_team,
         te_id, te_name, te_team
       ) VALUES (
-        ${email.toLowerCase()}, ${teamNumber},
+        ${email.toLowerCase()}, ${user.id}, ${teamNumber},
         ${qb.id}, ${qb.name}, ${qb.team},
         ${wr.id}, ${wr.name}, ${wr.team},
         ${rb.id}, ${rb.name}, ${rb.team},
@@ -102,6 +124,12 @@ export async function GET(request: Request) {
 
       // If email provided, return that user's entries with full details and scores
       if (email) {
+         // First get user info
+         const users = await sql`
+          SELECT id, name FROM users WHERE email = LOWER(${email})
+        `;
+         const userName = users.length > 0 ? users[0].name : null;
+
          const entries = await sql`
           SELECT
             team_number,
@@ -161,12 +189,16 @@ export async function GET(request: Request) {
          return NextResponse.json({
             submittedTeams: entries.map((e) => e.team_number),
             teams,
+            userName,
          });
       }
 
-      // Otherwise return all entries (for leaderboard)
+      // Otherwise return all entries (for leaderboard) - join with users to get names
       const entries = await sql`
-      SELECT * FROM entries ORDER BY created_at DESC
+      SELECT e.*, u.name as user_name
+      FROM entries e
+      LEFT JOIN users u ON e.user_id = u.id
+      ORDER BY e.created_at DESC
     `;
 
       return NextResponse.json({ entries });
