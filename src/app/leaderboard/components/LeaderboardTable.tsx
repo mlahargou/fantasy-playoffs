@@ -4,6 +4,7 @@ import { Entry } from '../types';
 
 interface LeaderboardTableProps {
   entries: Entry[];
+  hidePlayerSelections?: boolean;
 }
 
 function PlayerCell({ name, team, score }: { name: string; team: string; score: number }) {
@@ -13,6 +14,16 @@ function PlayerCell({ name, team, score }: { name: string; team: string; score: 
         <span className="text-white text-sm">{name}</span>
         <span className="text-xs text-slate-500">{team} • {score.toFixed(1)}</span>
       </div>
+    </td>
+  );
+}
+
+function HiddenCell() {
+  return (
+    <td className="px-4 py-3">
+      <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+      </svg>
     </td>
   );
 }
@@ -31,7 +42,7 @@ function RankBadge({ rank }: { rank: number }) {
   );
 }
 
-export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
+export default function LeaderboardTable({ entries, hidePlayerSelections = false }: LeaderboardTableProps) {
   if (entries.length === 0) {
     return (
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-xl p-12 text-center">
@@ -47,13 +58,13 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
           <thead className="bg-slate-800/50 border-b border-slate-700/50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Rank
+                #
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 Email
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                #
+                Team
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 QB
@@ -75,7 +86,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
           <tbody className="divide-y divide-slate-700/30">
             {entries.map((entry, index) => {
               const rank = index + 1;
-              const isLeader = rank === 1;
+              const isLeader = rank === 1 && !hidePlayerSelections;
 
               return (
                 <tr
@@ -91,15 +102,29 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                       {entry.team_number}
                     </span>
                   </td>
-                  <PlayerCell name={entry.qb_name} team={entry.qb_team} score={entry.score_breakdown.qb} />
-                  <PlayerCell name={entry.wr_name} team={entry.wr_team} score={entry.score_breakdown.wr} />
-                  <PlayerCell name={entry.rb_name} team={entry.rb_team} score={entry.score_breakdown.rb} />
-                  <PlayerCell name={entry.te_name} team={entry.te_team} score={entry.score_breakdown.te} />
-                  <td className={`px-4 py-3 text-right sticky right-0 ${isLeader ? 'bg-[#1a1f2e]' : 'bg-slate-900'}`}>
-                    <span className={`text-lg font-bold ${isLeader ? 'text-amber-400' : 'text-white'}`}>
-                      {entry.total_score.toFixed(1)}
-                    </span>
-                  </td>
+                  {hidePlayerSelections ? (
+                    <>
+                      <HiddenCell />
+                      <HiddenCell />
+                      <HiddenCell />
+                      <HiddenCell />
+                      <td className="px-4 py-3 text-right sticky right-0 bg-slate-900">
+                        <span className="text-slate-500 text-sm">—</span>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <PlayerCell name={entry.qb_name} team={entry.qb_team} score={entry.score_breakdown.qb} />
+                      <PlayerCell name={entry.wr_name} team={entry.wr_team} score={entry.score_breakdown.wr} />
+                      <PlayerCell name={entry.rb_name} team={entry.rb_team} score={entry.score_breakdown.rb} />
+                      <PlayerCell name={entry.te_name} team={entry.te_team} score={entry.score_breakdown.te} />
+                      <td className={`px-4 py-3 text-right sticky right-0 ${isLeader ? 'bg-[#1a1f2e]' : 'bg-slate-900'}`}>
+                        <span className={`text-lg font-bold ${isLeader ? 'text-amber-400' : 'text-white'}`}>
+                          {entry.total_score.toFixed(1)}
+                        </span>
+                      </td>
+                    </>
+                  )}
                 </tr>
               );
             })}

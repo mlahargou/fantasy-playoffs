@@ -39,48 +39,15 @@ function LeaderboardContent({ hideBackLink = false }: LeaderboardPageProps) {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [showRules, setShowRules] = useState(false);
 
-  // Check if access is allowed:
-  // - Before submission window opens: public
-  // - During submission window (after opened, before closed): requires ?auth
-  // - After submission window closes: public again
+  // Check submission window status
   const hasAuthParam = searchParams.has('auth');
   const now = new Date();
   const windowOpened = now > ENTRY_CONFIG.submissionWindowOpened;
   const windowClosed = now > ENTRY_CONFIG.submissionWindowClosed;
   const duringSubmissionWindow = windowOpened && !windowClosed;
-  const accessDenied = duringSubmissionWindow && !hasAuthParam;
 
-  if (accessDenied) {
-    const deadlineStr = ENTRY_CONFIG.submissionWindowClosed.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    });
-
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
-        <div className="text-center max-w-md">
-          <h1 className="text-6xl font-bold text-amber-500 mb-4">🏈</h1>
-          <h2 className="text-2xl font-semibold text-white mb-3">Leaderboard Not Available Yet</h2>
-          <p className="text-slate-400 mb-6">
-            The leaderboard will be available once the submission window closes on <span className="text-white font-medium">{deadlineStr}</span>. Check back after entries are locked!
-          </p>
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Entry Form
-          </a>
-        </div>
-      </main>
-    );
-  }
+  // Hide player selections during submission window (unless ?auth is present)
+  const hidePlayerSelections = duringSubmissionWindow && !hasAuthParam;
 
   useEffect(() => {
     const fetchEntries = async () => {
@@ -135,16 +102,40 @@ function LeaderboardContent({ hideBackLink = false }: LeaderboardPageProps) {
           totalEntries={entries.length}
           uniquePlayers={uniqueEmails.size}
           totalPot={totalPot}
-          topScore={topScore}
+          topScore={hidePlayerSelections ? null : topScore}
         />
 
-        <LeaderboardFilters
-          entries={entries}
-          filters={filters}
-          onFilterChange={setFilters}
-        />
+        {hidePlayerSelections ? (
+          <div className="bg-slate-800/30 border border-amber-500/30 rounded-xl p-6 mb-6 text-center">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="text-amber-400 font-semibold">Player Selections Hidden</span>
+            </div>
+            <p className="text-slate-400">
+              Selected players will be revealed when the league starts on{' '}
+              <span className="text-white font-medium">
+                {ENTRY_CONFIG.submissionWindowClosed.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  timeZoneName: 'short',
+                })}
+              </span>
+            </p>
+          </div>
+        ) : (
+          <LeaderboardFilters
+            entries={entries}
+            filters={filters}
+            onFilterChange={setFilters}
+          />
+        )}
 
-        <LeaderboardTable entries={sortedEntries} />
+        <LeaderboardTable entries={sortedEntries} hidePlayerSelections={hidePlayerSelections} />
 
         {entries.length > 0 && <PayoutCard totalPot={totalPot} />}
 
