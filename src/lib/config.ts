@@ -3,10 +3,10 @@
 // Edit this file to configure the entire app
 // ============================================
 
-// NFL teams in the 2024-2025 playoffs
+// NFL teams in the 2025-2026 playoffs
 export const PLAYOFF_TEAM_ABBRS = [
-   'BUF', 'BAL', 'KC', 'HOU', 'LAC', 'PIT', 'DEN', // AFC
-   'DET', 'PHI', 'TB', 'LAR', 'MIN', 'WAS', 'GB'   // NFC
+   'DEN', 'NE', 'JAX', 'PIT', 'HOU', 'BUF', 'LAC', // AFC
+   'SEA', 'CHI', 'PHI', 'CAR', 'LAR', 'SF', 'GB'   // NFC
 ];
 
 // Scoring configuration - weeks to include for scoring
@@ -14,8 +14,8 @@ export const PLAYOFF_TEAM_ABBRS = [
 // For playoffs: set season_type to 'post' and weeks to [1, 2, 3, 4]
 export const SCORING_CONFIG = {
    season: '2025',
-   season_type: 'regular' as const, // 'regular' or 'post'
-   weeks: [15, 16, 17], // Regular season weeks for testing, or [1, 2, 3, 4] for playoffs
+   season_type: 'post' as const, // 'regular' or 'post'
+   weeks: [1, 2, 3, 4], // Regular season weeks for testing, or [1, 2, 3, 4] for playoffs
 };
 
 // Entry rules
