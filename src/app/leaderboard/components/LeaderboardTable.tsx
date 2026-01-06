@@ -88,7 +88,7 @@ export default function LeaderboardTable({ entries, hidePlayerSelections = false
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 TE
               </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider sticky right-0 bg-slate-800/50">
+              <th className="px-4 py-3 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider sticky right-0 bg-slate-800">
                 Total
               </th>
             </tr>
