@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb, initializeDatabase } from '@/lib/db';
-import { calculateTeamScore } from '@/lib/sleeper';
+import { calculatePlayerScore } from '@/lib/sleeper';
 import { SCORING_CONFIG } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';
@@ -45,24 +45,43 @@ export async function GET() {
       ORDER BY e.created_at DESC
     `;
 
-    // Calculate scores for all entries in parallel
-    const entriesWithScores: EntryWithScore[] = await Promise.all(
-      entries.map(async (entry) => {
-        const playerIds = [entry.qb_id, entry.wr_id, entry.rb_id, entry.te_id];
-        const { total, breakdown } = await calculateTeamScore(playerIds);
+    // Step 1: Collect all unique player IDs from all entries
+    const uniquePlayerIds = new Set<string>();
+    for (const entry of entries) {
+      uniquePlayerIds.add(entry.qb_id);
+      uniquePlayerIds.add(entry.wr_id);
+      uniquePlayerIds.add(entry.rb_id);
+      uniquePlayerIds.add(entry.te_id);
+    }
 
-        return {
-          ...entry,
-          total_score: total,
-          score_breakdown: {
-            qb: breakdown[entry.qb_id] || 0,
-            wr: breakdown[entry.wr_id] || 0,
-            rb: breakdown[entry.rb_id] || 0,
-            te: breakdown[entry.te_id] || 0,
-          },
-        } as EntryWithScore;
+    // Step 2: Fetch scores for each unique player once (in parallel)
+    const playerScores = new Map<string, number>();
+    await Promise.all(
+      [...uniquePlayerIds].map(async (playerId) => {
+        const score = await calculatePlayerScore(playerId);
+        playerScores.set(playerId, score);
       })
     );
+
+    // Step 3: Build entry scores using the cached player scores
+    const entriesWithScores: EntryWithScore[] = entries.map((entry) => {
+      const qbScore = playerScores.get(entry.qb_id) || 0;
+      const wrScore = playerScores.get(entry.wr_id) || 0;
+      const rbScore = playerScores.get(entry.rb_id) || 0;
+      const teScore = playerScores.get(entry.te_id) || 0;
+      const totalScore = Math.round((qbScore + wrScore + rbScore + teScore) * 10) / 10;
+
+      return {
+        ...entry,
+        total_score: totalScore,
+        score_breakdown: {
+          qb: qbScore,
+          wr: wrScore,
+          rb: rbScore,
+          te: teScore,
+        },
+      } as EntryWithScore;
+    });
 
     // Sort by total score descending
     entriesWithScores.sort((a, b) => b.total_score - a.total_score);

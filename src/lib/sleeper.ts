@@ -114,30 +114,3 @@ export async function calculatePlayerScore(playerId: string): Promise<number> {
 
   return Math.round(totalPoints * 10) / 10; // Round to 1 decimal
 }
-
-export async function calculateTeamScore(playerIds: string[]): Promise<{
-  total: number;
-  breakdown: Record<string, number>;
-}> {
-  const breakdown: Record<string, number> = {};
-  let total = 0;
-
-  // Fetch all player scores in parallel
-  const scores = await Promise.all(
-    playerIds.map(async (id) => {
-      const score = await calculatePlayerScore(id);
-      return { id, score };
-    })
-  );
-
-  for (const { id, score } of scores) {
-    breakdown[id] = score;
-    total += score;
-  }
-
-  return {
-    total: Math.round(total * 10) / 10,
-    breakdown,
-  };
-}
-
