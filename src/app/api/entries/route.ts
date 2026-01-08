@@ -38,6 +38,15 @@ export async function POST(request: Request) {
          );
       }
 
+      // Check submission window is still open
+      const now = new Date();
+      if (now >= ENTRY_CONFIG.submissionWindowClosed) {
+         return NextResponse.json(
+            { error: 'The submission window has closed. New teams can no longer be submitted.' },
+            { status: 400 }
+         );
+      }
+
       // Check if user already exists
       const normalizedEmail = email.toLowerCase().trim();
       const existingUsers = await sql`
@@ -109,6 +118,97 @@ export async function POST(request: Request) {
       console.error('Error saving entry:', error);
       return NextResponse.json(
          { error: 'Failed to save entry. Please try again.' },
+         { status: 500 }
+      );
+   }
+}
+
+export async function PUT(request: Request) {
+   try {
+      await initializeDatabase();
+      const sql = getDb();
+
+      const body = await request.json();
+      const { email, teamNumber, qb, wr, rb, te } = body;
+
+      // Validate required fields
+      if (!email || !teamNumber || !qb || !wr || !rb || !te) {
+         return NextResponse.json(
+            { error: 'All fields are required' },
+            { status: 400 }
+         );
+      }
+
+      // Validate email format
+      if (!email.includes('@')) {
+         return NextResponse.json(
+            { error: 'Please enter a valid email address' },
+            { status: 400 }
+         );
+      }
+
+      // Validate team number
+      if (teamNumber < 1 || teamNumber > ENTRY_CONFIG.maxTeamsPerPerson) {
+         return NextResponse.json(
+            { error: `Team number must be between 1 and ${ENTRY_CONFIG.maxTeamsPerPerson}` },
+            { status: 400 }
+         );
+      }
+
+      // Check submission window is still open
+      const now = new Date();
+      if (now >= ENTRY_CONFIG.submissionWindowClosed) {
+         return NextResponse.json(
+            { error: 'The submission window has closed. Teams can no longer be edited.' },
+            { status: 400 }
+         );
+      }
+
+      // Find the user
+      const normalizedEmail = email.toLowerCase().trim();
+      const existingUsers = await sql`
+         SELECT id, name FROM users WHERE email = ${normalizedEmail}
+      `;
+
+      if (existingUsers.length === 0) {
+         return NextResponse.json(
+            { error: 'User not found' },
+            { status: 404 }
+         );
+      }
+
+      const user = existingUsers[0];
+
+      // Check if the team exists
+      const existingEntry = await sql`
+         SELECT id FROM entries WHERE user_id = ${user.id} AND team_number = ${teamNumber}
+      `;
+
+      if (existingEntry.length === 0) {
+         return NextResponse.json(
+            { error: `Team ${teamNumber} not found. Cannot update a team that doesn't exist.` },
+            { status: 404 }
+         );
+      }
+
+      // Update the entry
+      await sql`
+         UPDATE entries SET
+            qb_id = ${qb.id}, qb_name = ${qb.name}, qb_team = ${qb.team},
+            wr_id = ${wr.id}, wr_name = ${wr.name}, wr_team = ${wr.team},
+            rb_id = ${rb.id}, rb_name = ${rb.name}, rb_team = ${rb.team},
+            te_id = ${te.id}, te_name = ${te.name}, te_team = ${te.team}
+         WHERE user_id = ${user.id} AND team_number = ${teamNumber}
+      `;
+
+      return NextResponse.json({
+         success: true,
+         message: `Team ${teamNumber} updated successfully!`
+      });
+   } catch (error) {
+      console.error('Error updating entry:', error);
+      return NextResponse.json(
+         { error: 'Failed to update entry. Please try again.' },
          { status: 500 }
       );
    }
