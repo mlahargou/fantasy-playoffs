@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { getDb } from './db';
 
 const SALT_ROUNDS = 10;
-const SESSION_COOKIE_NAME = 'session_token';
+export const SESSION_COOKIE_NAME = 'session_token';
 const SESSION_EXPIRY_DAYS = 7;
 
 // Password hashing

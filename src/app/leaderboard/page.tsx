@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { Entry, ScoringConfig } from './types';
 import {
   LeaderboardHeader,
@@ -31,32 +30,41 @@ export default function LeaderboardPage({ hideBackLink = false }: LeaderboardPag
 }
 
 function LeaderboardContent({ hideBackLink = false }: LeaderboardPageProps) {
-  const searchParams = useSearchParams();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [config, setConfig] = useState<ScoringConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [showRules, setShowRules] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Check submission window status
-  const hasAuthParam = searchParams.has('auth');
   const now = new Date();
   const windowOpened = now > ENTRY_CONFIG.submissionWindowOpened;
   const windowClosed = now > ENTRY_CONFIG.submissionWindowClosed;
   const duringSubmissionWindow = windowOpened && !windowClosed;
 
-  // Hide player selections during submission window (unless ?auth is present)
-  const hidePlayerSelections = duringSubmissionWindow && !hasAuthParam;
+  // Hide player selections during submission window (unless user is admin)
+  const hidePlayerSelections = duringSubmissionWindow && !isAdmin;
 
   useEffect(() => {
-    const fetchEntries = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/scores');
-        if (!response.ok) throw new Error('Failed to fetch entries');
-        const data = await response.json();
-        setEntries(data.entries || []);
-        setConfig(data.config || null);
+        // Fetch entries and session in parallel
+        const [scoresResponse, sessionResponse] = await Promise.all([
+          fetch('/api/scores'),
+          fetch('/api/auth/session'),
+        ]);
+
+        if (!scoresResponse.ok) throw new Error('Failed to fetch entries');
+        const scoresData = await scoresResponse.json();
+        setEntries(scoresData.entries || []);
+        setConfig(scoresData.config || null);
+
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          setIsAdmin(sessionData.user?.isAdmin ?? false);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load entries');
       } finally {
@@ -64,7 +72,7 @@ function LeaderboardContent({ hideBackLink = false }: LeaderboardPageProps) {
       }
     };
 
-    fetchEntries();
+    fetchData();
   }, []);
 
   // Apply filters
