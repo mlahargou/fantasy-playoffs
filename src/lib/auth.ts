@@ -58,6 +58,7 @@ export interface SessionUser {
    id: number;
    email: string;
    name: string;
+   isAdmin: boolean;
 }
 
 export async function validateSession(): Promise<SessionUser | null> {
@@ -70,7 +71,7 @@ export async function validateSession(): Promise<SessionUser | null> {
    const now = new Date();
 
    const results = await db`
-      SELECT u.id, u.email, u.name
+      SELECT u.id, u.email, u.name, u.is_admin
       FROM sessions s
       JOIN users u ON s.user_id = u.id
       WHERE s.token = ${token} AND s.expires_at > ${now}
@@ -80,7 +81,13 @@ export async function validateSession(): Promise<SessionUser | null> {
       return null;
    }
 
-   return results[0] as SessionUser;
+   const row = results[0];
+   return {
+      id: row.id,
+      email: row.email,
+      name: row.name,
+      isAdmin: row.is_admin ?? false,
+   } as SessionUser;
 }
 
 export async function deleteSession(token: string): Promise<void> {
