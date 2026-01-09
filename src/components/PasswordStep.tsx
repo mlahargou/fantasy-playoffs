@@ -1,5 +1,7 @@
 'use client';
 
+import { CONTACT_CONFIG } from '@/lib/config';
+
 interface PasswordStepProps {
    email: string;
    mode: 'login' | 'set-password' | 'register';
@@ -126,6 +128,14 @@ export default function PasswordStep({
             {mode !== 'login' && (
                <p className="mt-1 text-xs text-slate-500">Must be at least 6 characters</p>
             )}
+            {mode === 'login' && (
+               <a
+                  href={`sms:${CONTACT_CONFIG.adminPhone}`}
+                  className="mt-2 block text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+               >
+                  Forgot password? Text {CONTACT_CONFIG.adminPhoneFormatted} to reset
+               </a>
+            )}
          </div>
 
          {/* Error message */}
@@ -139,11 +149,10 @@ export default function PasswordStep({
          <button
             type="submit"
             disabled={loading || password.length < 6 || (mode === 'register' && name.trim().length < 2)}
-            className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${
-               !loading && password.length >= 6 && (mode !== 'register' || name.trim().length >= 2)
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25'
-                  : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
-            }`}
+            className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-300 ${!loading && password.length >= 6 && (mode !== 'register' || name.trim().length >= 2)
+               ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25'
+               : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+               }`}
          >
             {loading ? (
                <span className="flex items-center justify-center gap-2">

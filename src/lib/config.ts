@@ -30,6 +30,12 @@ export const ENTRY_CONFIG = {
    submissionWindowClosed: new Date('2026-01-10T07:59:00Z'),
 };
 
+// Contact configuration
+export const CONTACT_CONFIG = {
+   adminPhone: '8058358579',
+   adminPhoneFormatted: '(805) 835-8579',
+};
+
 // Payout structure (percentages that should add up to 1.0)
 export const PAYOUT_CONFIG = {
    firstPlace: 0.9,  // 90%
