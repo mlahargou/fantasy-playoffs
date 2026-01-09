@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getDb, initializeDatabase, getOrCreateUser } from '@/lib/db';
+import { getDb, initializeDatabase } from '@/lib/db';
 import { calculatePlayerScore } from '@/lib/sleeper';
 import { ENTRY_CONFIG } from '@/lib/config';
+import { validateSession } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,21 +12,22 @@ export async function POST(request: Request) {
       await initializeDatabase();
       const sql = getDb();
 
-      const body = await request.json();
-      const { email, name, teamNumber, qb, wr, rb, te } = body;
-
-      // Validate required fields (name is optional for returning users)
-      if (!email || !teamNumber || !qb || !wr || !rb || !te) {
+      // Validate session - user must be authenticated
+      const user = await validateSession();
+      if (!user) {
          return NextResponse.json(
-            { error: 'All fields are required' },
-            { status: 400 }
+            { error: 'You must be logged in to submit a team' },
+            { status: 401 }
          );
       }
 
-      // Validate email format
-      if (!email.includes('@')) {
+      const body = await request.json();
+      const { teamNumber, qb, wr, rb, te } = body;
+
+      // Validate required fields
+      if (!teamNumber || !qb || !wr || !rb || !te) {
          return NextResponse.json(
-            { error: 'Please enter a valid email address' },
+            { error: 'All fields are required' },
             { status: 400 }
          );
       }
@@ -47,32 +49,10 @@ export async function POST(request: Request) {
          );
       }
 
-      // Check if user already exists
-      const normalizedEmail = email.toLowerCase().trim();
-      const existingUsers = await sql`
-         SELECT id, name FROM users WHERE email = ${normalizedEmail}
-      `;
-
-      let user;
-      if (existingUsers.length > 0) {
-         // Existing user - use their stored info
-         user = existingUsers[0];
-      } else {
-         // New user - name is required
-         if (!name || name.trim().length < 2) {
-            return NextResponse.json(
-               { error: 'Please enter your name' },
-               { status: 400 }
-            );
-         }
-         // Create new user
-         user = await getOrCreateUser(email, name.trim());
-      }
-
       // Check how many teams this person already has
       const existingTeams = await sql`
-      SELECT team_number FROM entries WHERE user_id = ${user.id}
-    `;
+         SELECT team_number FROM entries WHERE user_id = ${user.id}
+      `;
 
       if (existingTeams.length >= ENTRY_CONFIG.maxTeamsPerPerson) {
          return NextResponse.json(
@@ -94,20 +74,20 @@ export async function POST(request: Request) {
 
       // Insert the entry with user_id
       await sql`
-      INSERT INTO entries (
-        user_id, team_number,
-        qb_id, qb_name, qb_team,
-        wr_id, wr_name, wr_team,
-        rb_id, rb_name, rb_team,
-        te_id, te_name, te_team
-      ) VALUES (
-        ${user.id}, ${teamNumber},
-        ${qb.id}, ${qb.name}, ${qb.team},
-        ${wr.id}, ${wr.name}, ${wr.team},
-        ${rb.id}, ${rb.name}, ${rb.team},
-        ${te.id}, ${te.name}, ${te.team}
-      )
-    `;
+         INSERT INTO entries (
+            user_id, team_number,
+            qb_id, qb_name, qb_team,
+            wr_id, wr_name, wr_team,
+            rb_id, rb_name, rb_team,
+            te_id, te_name, te_team
+         ) VALUES (
+            ${user.id}, ${teamNumber},
+            ${qb.id}, ${qb.name}, ${qb.team},
+            ${wr.id}, ${wr.name}, ${wr.team},
+            ${rb.id}, ${rb.name}, ${rb.team},
+            ${te.id}, ${te.name}, ${te.team}
+         )
+      `;
 
       return NextResponse.json({
          success: true,
@@ -128,21 +108,22 @@ export async function PUT(request: Request) {
       await initializeDatabase();
       const sql = getDb();
 
-      const body = await request.json();
-      const { email, teamNumber, qb, wr, rb, te } = body;
-
-      // Validate required fields
-      if (!email || !teamNumber || !qb || !wr || !rb || !te) {
+      // Validate session - user must be authenticated
+      const user = await validateSession();
+      if (!user) {
          return NextResponse.json(
-            { error: 'All fields are required' },
-            { status: 400 }
+            { error: 'You must be logged in to update a team' },
+            { status: 401 }
          );
       }
 
-      // Validate email format
-      if (!email.includes('@')) {
+      const body = await request.json();
+      const { teamNumber, qb, wr, rb, te } = body;
+
+      // Validate required fields
+      if (!teamNumber || !qb || !wr || !rb || !te) {
          return NextResponse.json(
-            { error: 'Please enter a valid email address' },
+            { error: 'All fields are required' },
             { status: 400 }
          );
       }
@@ -164,22 +145,7 @@ export async function PUT(request: Request) {
          );
       }
 
-      // Find the user
-      const normalizedEmail = email.toLowerCase().trim();
-      const existingUsers = await sql`
-         SELECT id, name FROM users WHERE email = ${normalizedEmail}
-      `;
-
-      if (existingUsers.length === 0) {
-         return NextResponse.json(
-            { error: 'User not found' },
-            { status: 404 }
-         );
-      }
-
-      const user = existingUsers[0];
-
-      // Check if the team exists
+      // Check if the team exists for this user
       const existingEntry = await sql`
          SELECT id FROM entries WHERE user_id = ${user.id} AND team_number = ${teamNumber}
       `;
@@ -220,17 +186,13 @@ export async function GET(request: Request) {
       const sql = getDb();
 
       const { searchParams } = new URL(request.url);
-      const email = searchParams.get('email');
+      const forCurrentUser = searchParams.get('me') === 'true';
 
-      // If email provided, return that user's entries with full details and scores
-      if (email) {
-         // First get user info
-         const users = await sql`
-          SELECT id, name FROM users WHERE email = LOWER(${email})
-        `;
+      // If requesting current user's entries, validate session
+      if (forCurrentUser) {
+         const user = await validateSession();
 
-         if (users.length === 0) {
-            // User doesn't exist yet
+         if (!user) {
             return NextResponse.json({
                submittedTeams: [],
                teams: {},
@@ -238,7 +200,6 @@ export async function GET(request: Request) {
             });
          }
 
-         const user = users[0];
          const userName = user.name;
 
          const entries = await sql`

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import EmailStep from './EmailStep';
-import NameStep from './NameStep';
+import PasswordStep from './PasswordStep';
 import EmailHeader from './EmailHeader';
 import TeamSelector from './TeamSelector';
 import PlayerSelections from './PlayerSelections';
@@ -24,13 +24,16 @@ interface TeamSelections {
    totalScore?: number;
 }
 
-type Step = 'email' | 'name' | 'teams';
+type Step = 'loading' | 'email' | 'password' | 'teams';
+type PasswordMode = 'login' | 'set-password' | 'register';
 
 export default function EntryForm() {
-   // User state
+   // Auth state
+   const [step, setStep] = useState<Step>('loading');
    const [email, setEmail] = useState('');
    const [name, setName] = useState('');
-   const [step, setStep] = useState<Step>('email');
+   const [password, setPassword] = useState('');
+   const [passwordMode, setPasswordMode] = useState<PasswordMode>('login');
    const [loading, setLoading] = useState(false);
 
    // Team state
@@ -47,7 +50,6 @@ export default function EntryForm() {
    // UI state
    const [submitting, setSubmitting] = useState(false);
    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
    const [isEditing, setIsEditing] = useState(false);
 
    const isViewingSubmitted = submittedTeams.has(teamNumber);
@@ -63,20 +65,33 @@ export default function EntryForm() {
 
    const isFormValid = qb && wr && rb && te;
 
-   // Step 1: Check if email exists
-   const handleEmailSubmit = async () => {
-      setMessage(null);
+   // Check for existing session on mount
+   useEffect(() => {
+      checkSession();
+   }, []);
 
-      const trimmedEmail = email.trim().toLowerCase();
-
-      if (!trimmedEmail || !trimmedEmail.includes('@')) {
-         setMessage({ type: 'error', text: 'Please enter a valid email address' });
-         return;
-      }
-
-      setLoading(true);
+   const checkSession = async () => {
       try {
-         const response = await fetch(`/api/entries?email=${encodeURIComponent(trimmedEmail)}`);
+         const response = await fetch('/api/auth/session');
+         if (response.ok) {
+            const data = await response.json();
+            if (data.authenticated && data.user) {
+               setEmail(data.user.email);
+               setName(data.user.name);
+               await loadUserTeams();
+               setStep('teams');
+               return;
+            }
+         }
+      } catch (error) {
+         console.error('Error checking session:', error);
+      }
+      setStep('email');
+   };
+
+   const loadUserTeams = async () => {
+      try {
+         const response = await fetch('/api/entries?me=true');
          if (response.ok) {
             const data = await response.json();
             const teams = new Set<number>(data.submittedTeams || []);
@@ -91,54 +106,131 @@ export default function EntryForm() {
             } else if (teams.size > 0) {
                setTeamNumber(1);
             }
+         }
+      } catch (error) {
+         console.error('Error loading teams:', error);
+      }
+   };
 
-            // If user already exists, skip to teams step
-            if (data.userName) {
-               setName(data.userName);
-               setStep('teams');
+   // Step 1: Check if email exists and determine password mode
+   const handleEmailSubmit = async () => {
+      setMessage(null);
+
+      const trimmedEmail = email.trim().toLowerCase();
+
+      if (!trimmedEmail || !trimmedEmail.includes('@')) {
+         setMessage({ type: 'error', text: 'Please enter a valid email address' });
+         return;
+      }
+
+      setLoading(true);
+      try {
+         const response = await fetch(`/api/auth/check-email?email=${encodeURIComponent(trimmedEmail)}`);
+         if (response.ok) {
+            const data = await response.json();
+
+            if (data.exists) {
+               setName(data.userName || '');
+               if (data.has_password) {
+                  setPasswordMode('login');
+               } else {
+                  setPasswordMode('set-password');
+               }
             } else {
-               // New user - need to collect name
-               setStep('name');
+               setPasswordMode('register');
             }
+            setStep('password');
          } else {
-            // No existing user found - need to collect name
-            setStep('name');
+            setMessage({ type: 'error', text: 'Failed to check email. Please try again.' });
          }
       } catch (error) {
          console.error('Error checking email:', error);
-         // On error, still allow them to proceed to name step
-         setStep('name');
+         setMessage({ type: 'error', text: 'Network error. Please try again.' });
       } finally {
          setLoading(false);
       }
    };
 
-   // Step 2: Save name and proceed
-   const handleNameSubmit = async () => {
+   // Step 2: Handle password submission (login, set-password, or register)
+   const handlePasswordSubmit = async () => {
       setMessage(null);
 
-      const trimmedName = name.trim();
-      if (!trimmedName || trimmedName.length < 2) {
-         setMessage({ type: 'error', text: 'Please enter your name (at least 2 characters)' });
+      if (password.length < 6) {
+         setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
          return;
       }
 
-      // Name will be saved when they submit their first entry
-      setStep('teams');
+      if (passwordMode === 'register' && name.trim().length < 2) {
+         setMessage({ type: 'error', text: 'Please enter your name' });
+         return;
+      }
+
+      setLoading(true);
+      try {
+         let endpoint = '/api/auth/login';
+         let body: Record<string, string> = {
+            email: email.trim().toLowerCase(),
+            password,
+         };
+
+         if (passwordMode === 'register') {
+            endpoint = '/api/auth/register';
+            body.name = name.trim();
+         } else if (passwordMode === 'set-password') {
+            endpoint = '/api/auth/set-password';
+         }
+
+         const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+         });
+
+         const data = await response.json();
+
+         if (!response.ok) {
+            throw new Error(data.error || 'Authentication failed');
+         }
+
+         // Successfully authenticated
+         if (data.userName) {
+            setName(data.userName);
+         }
+
+         await loadUserTeams();
+         setPassword(''); // Clear password from memory
+         setStep('teams');
+      } catch (error) {
+         setMessage({
+            type: 'error',
+            text: error instanceof Error ? error.message : 'Authentication failed. Please try again.',
+         });
+      } finally {
+         setLoading(false);
+      }
    };
 
    const handleBackToEmail = () => {
       setStep('email');
-      setName('');
+      setPassword('');
       setMessage(null);
    };
 
-   const handleChangeEmail = () => {
+   const handleLogout = async () => {
+      try {
+         await fetch('/api/auth/logout', { method: 'POST' });
+      } catch (error) {
+         console.error('Error logging out:', error);
+      }
+
+      // Reset all state
       setStep('email');
+      setEmail('');
+      setName('');
+      setPassword('');
       setSubmittedTeams(new Set());
       setSavedTeams({});
       setMessage(null);
-      setName('');
       clearPlayerSelections();
    };
 
@@ -188,7 +280,6 @@ export default function EntryForm() {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-               email: email.trim().toLowerCase(),
                teamNumber,
                qb, wr, rb, te
             }),
@@ -202,14 +293,8 @@ export default function EntryForm() {
 
          setMessage({ type: 'success', text: data.message });
 
-         // Fetch updated team data with scores
-         const updatedResponse = await fetch(`/api/entries?email=${encodeURIComponent(email.trim().toLowerCase())}`);
-         if (updatedResponse.ok) {
-            const updatedData = await updatedResponse.json();
-            const teams = new Set<number>(updatedData.submittedTeams || []);
-            setSubmittedTeams(teams);
-            setSavedTeams(updatedData.teams || {});
-         }
+         // Reload teams from server
+         await loadUserTeams();
 
          setIsEditing(false);
          clearPlayerSelections();
@@ -246,8 +331,6 @@ export default function EntryForm() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-               email: email.trim().toLowerCase(),
-               name: name.trim(),
                teamNumber,
                qb, wr, rb, te
             }),
@@ -261,36 +344,16 @@ export default function EntryForm() {
 
          setMessage({ type: 'success', text: data.message });
 
-         // Fetch updated team data with scores
-         const updatedResponse = await fetch(`/api/entries?email=${encodeURIComponent(email.trim().toLowerCase())}`);
-         if (updatedResponse.ok) {
-            const updatedData = await updatedResponse.json();
-            const teams = new Set<number>(updatedData.submittedTeams || []);
-            setSubmittedTeams(teams);
-            setSavedTeams(updatedData.teams || {});
+         // Reload teams from server
+         await loadUserTeams();
 
-            // Find and select next available team number
-            const teamNumbers = Array.from({ length: ENTRY_CONFIG.maxTeamsPerPerson }, (_, i) => i + 1);
-            const nextTeam = teamNumbers.find((num) => !teams.has(num));
-            if (nextTeam) {
-               setTeamNumber(nextTeam);
-               clearPlayerSelections();
-            }
-         } else {
-            // Fallback: save locally without scores
-            const newSubmittedTeams = new Set([...submittedTeams, teamNumber]);
-            setSubmittedTeams(newSubmittedTeams);
-            setSavedTeams((prev) => ({
-               ...prev,
-               [teamNumber]: { qb, wr, rb, te },
-            }));
-
-            const teamNumbers = Array.from({ length: ENTRY_CONFIG.maxTeamsPerPerson }, (_, i) => i + 1);
-            const nextTeam = teamNumbers.find((num) => !newSubmittedTeams.has(num));
-            if (nextTeam) {
-               setTeamNumber(nextTeam);
-               clearPlayerSelections();
-            }
+         // Find and select next available team number
+         const teamNumbers = Array.from({ length: ENTRY_CONFIG.maxTeamsPerPerson }, (_, i) => i + 1);
+         const updatedTeams = new Set([...submittedTeams, teamNumber]);
+         const nextTeam = teamNumbers.find((num) => !updatedTeams.has(num));
+         if (nextTeam) {
+            setTeamNumber(nextTeam);
+            clearPlayerSelections();
          }
       } catch (error) {
          setMessage({
@@ -301,6 +364,18 @@ export default function EntryForm() {
          setSubmitting(false);
       }
    };
+
+   // Loading state
+   if (step === 'loading') {
+      return (
+         <div className="flex items-center justify-center py-12">
+            <svg className="animate-spin h-8 w-8 text-emerald-500" viewBox="0 0 24 24">
+               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+         </div>
+      );
+   }
 
    // Step 1: Email entry
    if (step === 'email') {
@@ -315,14 +390,17 @@ export default function EntryForm() {
       );
    }
 
-   // Step 2: Name entry (only for new users)
-   if (step === 'name') {
+   // Step 2: Password entry
+   if (step === 'password') {
       return (
-         <NameStep
+         <PasswordStep
             email={email}
+            mode={passwordMode}
             name={name}
             setName={setName}
-            onSubmit={handleNameSubmit}
+            password={password}
+            setPassword={setPassword}
+            onSubmit={handlePasswordSubmit}
             onBack={handleBackToEmail}
             loading={loading}
             error={message?.type === 'error' ? message.text : null}
@@ -330,13 +408,13 @@ export default function EntryForm() {
       );
    }
 
-   // Step 3: Team selection
+   // Step 3: Team selection (authenticated)
    return (
       <form onSubmit={isEditing ? handleTeamUpdate : handleTeamSubmit} className="space-y-8">
          <EmailHeader
             email={email}
             submittedCount={submittedTeams.size}
-            onChangeEmail={handleChangeEmail}
+            onLogout={handleLogout}
          />
 
          <TeamSelector
