@@ -73,3 +73,42 @@ export async function PUT(request: Request) {
    }
 }
 
+// DELETE - Reset a manager's password (clears password and sessions)
+export async function DELETE(request: Request) {
+   try {
+      await initializeDatabase();
+      const sql = getDb();
+
+      const body = await request.json();
+      const { userId } = body;
+
+      if (typeof userId !== 'number') {
+         return NextResponse.json(
+            { error: 'User ID is required' },
+            { status: 400 }
+         );
+      }
+
+      // Clear the password hash
+      await sql`
+         UPDATE users
+         SET password_hash = NULL
+         WHERE id = ${userId}
+      `;
+
+      // Delete all sessions for this user
+      await sql`
+         DELETE FROM sessions
+         WHERE user_id = ${userId}
+      `;
+
+      return NextResponse.json({ success: true });
+   } catch (error) {
+      console.error('Error resetting password:', error);
+      return NextResponse.json(
+         { error: 'Failed to reset password' },
+         { status: 500 }
+      );
+   }
+}
+

@@ -16,6 +16,7 @@ export default function AdminManagersPage() {
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
    const [saving, setSaving] = useState<number | null>(null);
+   const [resetting, setResetting] = useState<number | null>(null);
 
    useEffect(() => {
       fetchManagers();
@@ -51,6 +52,30 @@ export default function AdminManagersPage() {
          alert('Failed to save: ' + (err instanceof Error ? err.message : 'Unknown error'));
       } finally {
          setSaving(null);
+      }
+   };
+
+   const resetPassword = async (userId: number, userName: string) => {
+      const confirmed = confirm(
+         `Are you sure you want to reset the password for ${userName}?\n\nThis will log them out and require them to set a new password.`
+      );
+      if (!confirmed) return;
+
+      setResetting(userId);
+      try {
+         const response = await fetch('/api/admin/managers', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+         });
+
+         if (!response.ok) throw new Error('Failed to reset password');
+
+         alert(`Password reset for ${userName}. They will need to set a new password on next login.`);
+      } catch (err) {
+         alert('Failed to reset password: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      } finally {
+         setResetting(null);
       }
    };
 
@@ -156,7 +181,10 @@ export default function AdminManagersPage() {
                               Joined
                            </th>
                            <th className="px-4 py-3 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                              Actions
+                              Role
+                           </th>
+                           <th className="px-4 py-3 text-center text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                              Password
                            </th>
                         </tr>
                      </thead>
@@ -197,7 +225,7 @@ export default function AdminManagersPage() {
                               <td className="px-4 py-3 text-center">
                                  <button
                                     onClick={() => toggleAdmin(manager.id, manager.is_admin)}
-                                    disabled={saving === manager.id}
+                                    disabled={saving === manager.id || resetting === manager.id}
                                     className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                                        manager.is_admin
                                           ? 'bg-slate-700 hover:bg-slate-600 text-white'
@@ -209,6 +237,15 @@ export default function AdminManagersPage() {
                                        : manager.is_admin
                                        ? 'Remove Admin'
                                        : 'Make Admin'}
+                                 </button>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                 <button
+                                    onClick={() => resetPassword(manager.id, manager.name)}
+                                    disabled={saving === manager.id || resetting === manager.id}
+                                    className="px-3 py-1.5 rounded text-sm font-medium transition-colors bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                 >
+                                    {resetting === manager.id ? 'Resetting...' : 'Reset PW'}
                                  </button>
                               </td>
                            </tr>
