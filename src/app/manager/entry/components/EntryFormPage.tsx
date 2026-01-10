@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import EntryForm from './EntryForm';
-import RulesModal from './RulesModal';
+import RulesModal from '@/components/RulesModal';
 import { DISPLAY_CONFIG } from '@/lib/config';
 
 const RULES_SEEN_KEY = 'fantasy-playoffs-rules-seen';
@@ -92,6 +93,18 @@ export default function EntryFormPage() {
           <EntryForm />
         </div>
 
+        {/* Back link */}
+        <div className="mt-8 text-center">
+          <Link
+            href="/manager"
+            className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Dashboard
+          </Link>
+        </div>
       </div>
 
       {/* Rules Modal */}

@@ -5,6 +5,9 @@ import { SESSION_COOKIE_NAME } from '@/lib/auth';
 
 export async function middleware(request: NextRequest) {
    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+   const pathname = request.nextUrl.pathname;
+   const isAdminRoute = pathname.startsWith('/admin');
+   const isManagerRoute = pathname.startsWith('/manager');
 
    // No session token - redirect to home
    if (!token) {
@@ -22,12 +25,18 @@ export async function middleware(request: NextRequest) {
          WHERE s.token = ${token} AND s.expires_at > ${now}
       `;
 
-      // Invalid session or not an admin
-      if (results.length === 0 || !results[0].is_admin) {
+      // Invalid session
+      if (results.length === 0) {
          return NextResponse.redirect(new URL('/?error=unauthorized', request.url));
       }
 
-      // User is authenticated and is an admin - allow access
+      // For admin routes, require admin privileges
+      if (isAdminRoute && !results[0].is_admin) {
+         return NextResponse.redirect(new URL('/?error=unauthorized', request.url));
+      }
+
+      // For manager routes, just need to be authenticated (already verified above)
+      // User is authenticated - allow access
       return NextResponse.next();
    } catch (error) {
       console.error('Middleware auth error:', error);
@@ -36,6 +45,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-   matcher: '/admin/:path*',
+   matcher: ['/admin/:path*', '/manager/:path*'],
 };
-

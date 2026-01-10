@@ -36,6 +36,7 @@ function LeaderboardContent({ hideBackLink = false }: LeaderboardPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [showRules, setShowRules] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Check submission window status
@@ -63,6 +64,7 @@ function LeaderboardContent({ hideBackLink = false }: LeaderboardPageProps) {
 
         if (sessionResponse.ok) {
           const sessionData = await sessionResponse.json();
+          setIsAuthenticated(sessionData.authenticated ?? false);
           setIsAdmin(sessionData.user?.isAdmin ?? false);
         }
       } catch (err) {
@@ -151,13 +153,13 @@ function LeaderboardContent({ hideBackLink = false }: LeaderboardPageProps) {
         <div className="mt-8 flex items-center gap-6">
           {!hideBackLink && (
             <a
-              href="/"
+              href={isAuthenticated ? '/manager' : '/'}
               className="text-slate-400 hover:text-white transition-colors inline-flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Back to Entry Form
+              {isAuthenticated ? 'Back to Dashboard' : 'Back to Home'}
             </a>
           )}
           <button

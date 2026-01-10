@@ -1,9 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import EmailStep from './EmailStep';
-import PasswordStep from './PasswordStep';
-import EmailHeader from './EmailHeader';
 import TeamSelector from './TeamSelector';
 import PlayerSelections from './PlayerSelections';
 import SubmitButton from './SubmitButton';
@@ -24,17 +21,9 @@ interface TeamSelections {
    totalScore?: number;
 }
 
-type Step = 'loading' | 'email' | 'password' | 'teams';
-type PasswordMode = 'login' | 'set-password' | 'register';
-
 export default function EntryForm() {
-   // Auth state
-   const [step, setStep] = useState<Step>('loading');
-   const [email, setEmail] = useState('');
-   const [name, setName] = useState('');
-   const [password, setPassword] = useState('');
-   const [passwordMode, setPasswordMode] = useState<PasswordMode>('login');
-   const [loading, setLoading] = useState(false);
+   // User state
+   const [loading, setLoading] = useState(true);
 
    // Team state
    const [teamNumber, setTeamNumber] = useState(1);
@@ -65,28 +54,25 @@ export default function EntryForm() {
 
    const isFormValid = qb && wr && rb && te;
 
-   // Check for existing session on mount
+   // Load user session and teams on mount
    useEffect(() => {
-      checkSession();
+      loadUserData();
    }, []);
 
-   const checkSession = async () => {
+   const loadUserData = async () => {
       try {
          const response = await fetch('/api/auth/session');
          if (response.ok) {
             const data = await response.json();
             if (data.authenticated && data.user) {
-               setEmail(data.user.email);
-               setName(data.user.name);
                await loadUserTeams();
-               setStep('teams');
-               return;
             }
          }
       } catch (error) {
-         console.error('Error checking session:', error);
+         console.error('Error loading user data:', error);
+      } finally {
+         setLoading(false);
       }
-      setStep('email');
    };
 
    const loadUserTeams = async () => {
@@ -110,128 +96,6 @@ export default function EntryForm() {
       } catch (error) {
          console.error('Error loading teams:', error);
       }
-   };
-
-   // Step 1: Check if email exists and determine password mode
-   const handleEmailSubmit = async () => {
-      setMessage(null);
-
-      const trimmedEmail = email.trim().toLowerCase();
-
-      if (!trimmedEmail || !trimmedEmail.includes('@')) {
-         setMessage({ type: 'error', text: 'Please enter a valid email address' });
-         return;
-      }
-
-      setLoading(true);
-      try {
-         const response = await fetch(`/api/auth/check-email?email=${encodeURIComponent(trimmedEmail)}`);
-         if (response.ok) {
-            const data = await response.json();
-
-            if (data.exists) {
-               setName(data.userName || '');
-               if (data.has_password) {
-                  setPasswordMode('login');
-               } else {
-                  setPasswordMode('set-password');
-               }
-            } else {
-               setPasswordMode('register');
-            }
-            setStep('password');
-         } else {
-            setMessage({ type: 'error', text: 'Failed to check email. Please try again.' });
-         }
-      } catch (error) {
-         console.error('Error checking email:', error);
-         setMessage({ type: 'error', text: 'Network error. Please try again.' });
-      } finally {
-         setLoading(false);
-      }
-   };
-
-   // Step 2: Handle password submission (login, set-password, or register)
-   const handlePasswordSubmit = async () => {
-      setMessage(null);
-
-      if (password.length < 6) {
-         setMessage({ type: 'error', text: 'Password must be at least 6 characters' });
-         return;
-      }
-
-      if (passwordMode === 'register' && name.trim().length < 2) {
-         setMessage({ type: 'error', text: 'Please enter your name' });
-         return;
-      }
-
-      setLoading(true);
-      try {
-         let endpoint = '/api/auth/login';
-         let body: Record<string, string> = {
-            email: email.trim().toLowerCase(),
-            password,
-         };
-
-         if (passwordMode === 'register') {
-            endpoint = '/api/auth/register';
-            body.name = name.trim();
-         } else if (passwordMode === 'set-password') {
-            endpoint = '/api/auth/set-password';
-         }
-
-         const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-         });
-
-         const data = await response.json();
-
-         if (!response.ok) {
-            throw new Error(data.error || 'Authentication failed');
-         }
-
-         // Successfully authenticated
-         if (data.userName) {
-            setName(data.userName);
-         }
-
-         await loadUserTeams();
-         setPassword(''); // Clear password from memory
-         setStep('teams');
-      } catch (error) {
-         setMessage({
-            type: 'error',
-            text: error instanceof Error ? error.message : 'Authentication failed. Please try again.',
-         });
-      } finally {
-         setLoading(false);
-      }
-   };
-
-   const handleBackToEmail = () => {
-      setStep('email');
-      setPassword('');
-      setMessage(null);
-   };
-
-   const handleLogout = async () => {
-      try {
-         await fetch('/api/auth/logout', { method: 'POST' });
-      } catch (error) {
-         console.error('Error logging out:', error);
-      }
-
-      // Reset all state
-      setStep('email');
-      setEmail('');
-      setName('');
-      setPassword('');
-      setSubmittedTeams(new Set());
-      setSavedTeams({});
-      setMessage(null);
-      clearPlayerSelections();
    };
 
    const handleTeamNumberChange = (num: number) => {
@@ -366,7 +230,7 @@ export default function EntryForm() {
    };
 
    // Loading state
-   if (step === 'loading') {
+   if (loading) {
       return (
          <div className="flex items-center justify-center py-12">
             <svg className="animate-spin h-8 w-8 text-emerald-500" viewBox="0 0 24 24">
@@ -377,46 +241,8 @@ export default function EntryForm() {
       );
    }
 
-   // Step 1: Email entry
-   if (step === 'email') {
-      return (
-         <EmailStep
-            email={email}
-            setEmail={setEmail}
-            onSubmit={handleEmailSubmit}
-            loading={loading}
-            error={message?.type === 'error' ? message.text : null}
-         />
-      );
-   }
-
-   // Step 2: Password entry
-   if (step === 'password') {
-      return (
-         <PasswordStep
-            email={email}
-            mode={passwordMode}
-            name={name}
-            setName={setName}
-            password={password}
-            setPassword={setPassword}
-            onSubmit={handlePasswordSubmit}
-            onBack={handleBackToEmail}
-            loading={loading}
-            error={message?.type === 'error' ? message.text : null}
-         />
-      );
-   }
-
-   // Step 3: Team selection (authenticated)
    return (
       <form onSubmit={isEditing ? handleTeamUpdate : handleTeamSubmit} className="space-y-8">
-         <EmailHeader
-            email={email}
-            submittedCount={submittedTeams.size}
-            onLogout={handleLogout}
-         />
-
          <TeamSelector
             teamNumber={teamNumber}
             submittedTeams={submittedTeams}
