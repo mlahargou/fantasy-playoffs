@@ -27,32 +27,6 @@ export async function initializeDatabase() {
     )
   `;
 
-  // Add password_hash column if it doesn't exist (for existing databases)
-  await db`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'users' AND column_name = 'password_hash'
-      ) THEN
-        ALTER TABLE users ADD COLUMN password_hash VARCHAR(255);
-      END IF;
-    END $$;
-  `;
-
-  // Add is_admin column if it doesn't exist (for existing databases)
-  await db`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'users' AND column_name = 'is_admin'
-      ) THEN
-        ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;
-      END IF;
-    END $$;
-  `;
-
   // Create sessions table
   await db`
     CREATE TABLE IF NOT EXISTS sessions (
