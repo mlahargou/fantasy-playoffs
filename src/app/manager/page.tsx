@@ -75,7 +75,7 @@ export default function ManagerIndexPage() {
                   </div>
                   <h1 className="text-2xl font-bold text-white">Manager Dashboard</h1>
                </div>
-               <p className="text-slate-400">Manage your Fantasy Playoffs entries</p>
+               <p className="text-slate-400">Manage your Fantasy Playoffs teams</p>
             </div>
 
             {/* Manager Pages Grid */}

@@ -9,15 +9,6 @@ export default function MyTeamsPage() {
          <div className="max-w-4xl mx-auto">
             {/* Header */}
             <div className="mb-8">
-               <Link
-                  href="/manager"
-                  className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
-               >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to Dashboard
-               </Link>
                <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,6 +24,19 @@ export default function MyTeamsPage() {
 
             {/* Teams Content */}
             <MyTeamsSection />
+
+            {/* Footer */}
+            <div className="mt-8">
+               <Link
+                  href="/manager"
+                  className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+               >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Dashboard
+               </Link>
+            </div>
          </div>
       </main>
    );
