@@ -114,3 +114,28 @@ export async function calculatePlayerScore(playerId: string): Promise<number> {
 
   return Math.round(totalPoints * 10) / 10; // Round to 1 decimal
 }
+
+export interface PlayerWeeklyScores {
+  weeklyScores: Record<number, number>;
+  totalScore: number;
+}
+
+export async function getPlayerWeeklyScores(playerId: string): Promise<PlayerWeeklyScores> {
+  const stats = await getPlayerWeeklyStats(playerId);
+  const { weeks } = SCORING_CONFIG;
+
+  const weeklyScores: Record<number, number> = {};
+  let totalScore = 0;
+
+  for (const week of weeks) {
+    const weekStats = stats[week.toString()];
+    const points = weekStats?.stats?.pts_ppr ?? 0;
+    weeklyScores[week] = Math.round(points * 10) / 10;
+    totalScore += points;
+  }
+
+  return {
+    weeklyScores,
+    totalScore: Math.round(totalScore * 10) / 10,
+  };
+}
