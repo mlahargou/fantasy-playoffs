@@ -11,10 +11,11 @@ const RULES_SEEN_KEY = 'fantasy-playoffs-rules-seen';
 export default function EntryFormPage() {
   const [showRules, setShowRules] = useState(false);
 
+  // Check localStorage on mount - useEffect is required for SSR-safe browser API access
   useEffect(() => {
-    // Show rules modal on first visit
     const hasSeenRules = localStorage.getItem(RULES_SEEN_KEY);
     if (!hasSeenRules) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- SSR-safe localStorage pattern
       setShowRules(true);
     }
   }, []);

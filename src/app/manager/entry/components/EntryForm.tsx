@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import TeamSelector from './TeamSelector';
 import PlayerSelections from './PlayerSelections';
 import SubmitButton from './SubmitButton';
@@ -54,12 +54,7 @@ export default function EntryForm() {
 
    const isFormValid = qb && wr && rb && te;
 
-   // Load user session and teams on mount
-   useEffect(() => {
-      loadUserData();
-   }, []);
-
-   const loadUserData = async () => {
+   const loadUserData = useCallback(async () => {
       try {
          const response = await fetch('/api/auth/session');
          if (response.ok) {
@@ -73,7 +68,12 @@ export default function EntryForm() {
       } finally {
          setLoading(false);
       }
-   };
+   }, []);
+
+   // Load user session and teams on mount
+   useEffect(() => {
+      loadUserData();
+   }, [loadUserData]);
 
    const loadUserTeams = async () => {
       try {

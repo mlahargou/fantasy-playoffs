@@ -7,7 +7,6 @@ export async function middleware(request: NextRequest) {
    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
    const pathname = request.nextUrl.pathname;
    const isAdminRoute = pathname.startsWith('/admin');
-   const isManagerRoute = pathname.startsWith('/manager');
 
    // No session token - redirect to home
    if (!token) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { ENTRY_CONFIG, PAYOUT_CONFIG, SCORING_CONFIG } from '@/lib/config';
+import { ENTRY_CONFIG, PAYOUT_CONFIG } from '@/lib/config';
 
 interface RulesModalProps {
   isOpen: boolean;

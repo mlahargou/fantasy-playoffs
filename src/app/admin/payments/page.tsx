@@ -243,6 +243,14 @@ function UserRow({ user, onUpdate, saving }: UserRowProps) {
    const [teamsPaid, setTeamsPaid] = useState(user.teams_paid);
    const [notes, setNotes] = useState(user.notes || '');
    const [editing, setEditing] = useState(false);
+   const [prevUserData, setPrevUserData] = useState({ teams_paid: user.teams_paid, notes: user.notes });
+
+   // Sync local state when user prop changes (React pattern for derived state)
+   if (user.teams_paid !== prevUserData.teams_paid || user.notes !== prevUserData.notes) {
+      setPrevUserData({ teams_paid: user.teams_paid, notes: user.notes });
+      setTeamsPaid(user.teams_paid);
+      setNotes(user.notes || '');
+   }
 
    const hasChanges = teamsPaid !== user.teams_paid || notes !== (user.notes || '');
    const isPaidUp = user.teams_paid >= user.teams_created && user.teams_created > 0;
@@ -259,12 +267,6 @@ function UserRow({ user, onUpdate, saving }: UserRowProps) {
       setNotes(user.notes || '');
       setEditing(false);
    };
-
-   // Update local state when user prop changes
-   useEffect(() => {
-      setTeamsPaid(user.teams_paid);
-      setNotes(user.notes || '');
-   }, [user.teams_paid, user.notes]);
 
    return (
       <tr className={`transition-colors ${owesMore ? 'bg-amber-500/5' : isPaidUp ? 'bg-emerald-500/5' : ''}`}>

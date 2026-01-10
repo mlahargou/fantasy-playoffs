@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import EmailStep from './EmailStep';
 import PasswordStep from './PasswordStep';
@@ -20,12 +20,7 @@ export default function LoginForm() {
    const [loading, setLoading] = useState(false);
    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-   // Check for existing session on mount
-   useEffect(() => {
-      checkSession();
-   }, []);
-
-   const checkSession = async () => {
+   const checkSession = useCallback(async () => {
       try {
          const response = await fetch('/api/auth/session');
          if (response.ok) {
@@ -40,7 +35,12 @@ export default function LoginForm() {
          console.error('Error checking session:', error);
       }
       setStep('email');
-   };
+   }, [router]);
+
+   // Check for existing session on mount
+   useEffect(() => {
+      checkSession();
+   }, [checkSession]);
 
    // Step 1: Check if email exists and determine password mode
    const handleEmailSubmit = async () => {
@@ -98,7 +98,7 @@ export default function LoginForm() {
       setLoading(true);
       try {
          let endpoint = '/api/auth/login';
-         let body: Record<string, string> = {
+         const body: Record<string, string> = {
             email: email.trim().toLowerCase(),
             password,
          };
