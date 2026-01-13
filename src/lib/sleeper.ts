@@ -107,8 +107,8 @@ export async function calculatePlayerScore(playerId: string): Promise<number> {
 
   for (const week of weeks) {
     const weekStats = stats[week.toString()];
-    if (weekStats?.stats?.pts_ppr) {
-      totalPoints += weekStats.stats.pts_ppr;
+    if (weekStats?.stats?.pts_std) {
+      totalPoints += weekStats.stats.pts_std;
     }
   }
 
@@ -129,7 +129,7 @@ export async function getPlayerWeeklyScores(playerId: string): Promise<PlayerWee
 
   for (const week of weeks) {
     const weekStats = stats[week.toString()];
-    const points = weekStats?.stats?.pts_ppr ?? 0;
+    const points = weekStats?.stats?.pts_std ?? 0;
     weeklyScores[week] = Math.round(points * 10) / 10;
     totalScore += points;
   }
